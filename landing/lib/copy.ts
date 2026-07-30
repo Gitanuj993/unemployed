@@ -16,9 +16,26 @@ export const copy = {
       "A job hunting tool that runs on your own laptop. Finds roles, shows you why they fit, and writes a resume from things you actually did.",
   },
 
+  nav: {
+    links: [
+      { href: "#what", label: "What it does" },
+      { href: "#local", label: "Why local" },
+      { href: "#install", label: "Run it" },
+      { href: "#wall", label: "The wall" },
+    ],
+    cta: "Join the wall",
+  },
+
   hero: {
+    // Sits above the wordmark, small, so the joke has something to land against.
+    eyebrow: "For students doing an off campus job hunt",
     tagline: "Job hunting is a full time job. Nobody pays you for it.",
     sub: "This does the boring half. It reads job boards, scores every role against what you have actually done, and writes the resume. All of it on your own laptop, for free.",
+    primary: "Put yourself on the wall",
+    secondary: "See how it works",
+    counting: (n: number) =>
+      n === 1 ? "1 person on the wall" : `${n} people on the wall`,
+    scroll: "Scroll",
   },
 
   problem: {

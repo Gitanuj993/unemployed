@@ -19,7 +19,8 @@ export function db() {
 }
 
 export type SignupRow = {
-  id: number;
+  // bigint, which the driver hands back as a string rather than a number.
+  id: string;
   name: string;
   country: string;
   gender: "female" | "male" | "neutral";

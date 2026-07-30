@@ -125,44 +125,47 @@ export function SignupForm({
             />
           </div>
 
-          <div className="grid gap-4 sm:grid-cols-2">
-            <div className="space-y-1.5">
-              <label htmlFor="country" className="text-sm font-medium">
-                {copy.join.countryLabel}
-              </label>
-              <select
-                id="country"
-                value={country}
-                onChange={(e) => setCountry(e.target.value)}
-                className="h-9 w-full rounded-lg border bg-transparent px-2 text-sm focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50"
-              >
-                {COUNTRIES.map((c) => (
-                  <option key={c.code} value={c.code}>
-                    {c.name}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <fieldset className="space-y-1.5">
-              <legend className="text-sm font-medium">{copy.join.genderLabel}</legend>
-              <div className="flex gap-3 pt-1">
-                {GENDERS.map((g) => (
-                  <label key={g} className="flex cursor-pointer items-center gap-1.5 text-sm">
-                    <input
-                      type="radio"
-                      name="gender"
-                      value={g}
-                      checked={gender === g}
-                      onChange={() => setGender(g)}
-                      className="size-3.5 accent-foreground"
-                    />
-                    {copy.join.genderOptions[g]}
-                  </label>
-                ))}
-              </div>
-            </fieldset>
+          <div className="space-y-1.5">
+            <label htmlFor="country" className="text-sm font-medium">
+              {copy.join.countryLabel}
+            </label>
+            <select
+              id="country"
+              value={country}
+              onChange={(e) => setCountry(e.target.value)}
+              className="h-9 w-full max-w-xs rounded-lg border bg-transparent px-2 text-sm focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50"
+            >
+              {COUNTRIES.map((c) => (
+                <option key={c.code} value={c.code}>
+                  {c.name}
+                </option>
+              ))}
+            </select>
           </div>
+
+          {/* Its own row: three labels next to a country select wrapped onto two
+              lines and pulled the whole group out of alignment. */}
+          <fieldset className="space-y-1.5">
+            <legend className="text-sm font-medium">{copy.join.genderLabel}</legend>
+            <div className="flex flex-wrap gap-x-5 gap-y-2 pt-1">
+              {GENDERS.map((g) => (
+                <label
+                  key={g}
+                  className="flex cursor-pointer items-center gap-1.5 text-sm whitespace-nowrap"
+                >
+                  <input
+                    type="radio"
+                    name="gender"
+                    value={g}
+                    checked={gender === g}
+                    onChange={() => setGender(g)}
+                    className="size-3.5 accent-foreground"
+                  />
+                  {copy.join.genderOptions[g]}
+                </label>
+              ))}
+            </div>
+          </fieldset>
 
           {error && (
             <p className="rounded-md border px-3 py-2 text-sm font-medium" role="alert">

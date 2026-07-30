@@ -25,11 +25,11 @@ export function Wall({
 
   return (
     <>
-      <section className="mt-20">
-        <h2 className="mb-5 font-mono text-xs tracking-widest uppercase">
+      <section id="wall" className="scroll-mt-20 pt-28">
+        <h2 className="text-muted-foreground mb-6 font-mono text-[11px] tracking-[0.2em] uppercase">
           {copy.join.heading}
         </h2>
-        <p className="text-muted-foreground mb-5 text-sm">{copy.join.body}</p>
+        <p className="text-muted-foreground mb-6 text-sm">{copy.join.body}</p>
         <SignupForm
           initialSeed={initialSeed}
           onJoined={(row) => setPeople((prev) => [row, ...prev])}
@@ -37,8 +37,8 @@ export function Wall({
         <p className="text-muted-foreground mt-3 text-xs">{copy.join.why}</p>
       </section>
 
-      <section className="mt-20">
-        <h2 className="mb-5 font-mono text-xs tracking-widest uppercase">
+      <section className="pt-28">
+        <h2 className="text-muted-foreground mb-6 font-mono text-[11px] tracking-[0.2em] uppercase">
           {copy.wall.heading}
         </h2>
 
