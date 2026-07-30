@@ -1,0 +1,94 @@
+# The whole application: `docker compose up -d` runs everything.
+#
+# postgres and ollama are always needed. The api, web and worker services are in
+# the `app` profile, so day-to-day development can start just the infra and run
+# the backend/frontend on the host for fast hot-reload:
+#
+#   docker compose up -d                      # infra only (development)
+#   docker compose --profile app up -d        # the full stack
+#
+services:
+  postgres:
+    # pgvector/pgvector ships Postgres with the pgvector extension preinstalled.
+    image: pgvector/pgvector:pg16
+    container_name: jobsearch-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: jobsearch
+      POSTGRES_PASSWORD: jobsearch
+      POSTGRES_DB: jobsearch
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U jobsearch -d jobsearch"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  ollama:
+    # Local LLM runtime. We pull models into it after it starts (see README).
+    image: ollama/ollama:latest
+    container_name: jobsearch-ollama
+    restart: unless-stopped
+    ports:
+      # Host port 11435 on purpose: a native Windows/macOS Ollama install owns
+      # 11434 and auto-starts, which would silently shadow this container.
+      - "11435:11434"
+    volumes:
+      - ollamadata:/root/.ollama
+
+  api:
+    profiles: ["app"]
+    build: ./backend
+    container_name: jobsearch-api
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      # Inside the compose network, services reach each other by name — and
+      # ollama listens on its own 11434 here, not the 11435 host mapping.
+      DATABASE_URL: postgresql+psycopg://jobsearch:jobsearch@postgres:5432/jobsearch
+      OLLAMA_URL: http://ollama:11434
+      OLLAMA_MODEL: ${OLLAMA_MODEL:-llama3.2:3b}
+    ports:
+      - "8000:8000"
+    volumes:
+      - generated:/app/generated
+    command: >
+      sh -c "alembic upgrade head &&
+             uvicorn app.main:app --host 0.0.0.0 --port 8000"
+
+  worker:
+    profiles: ["app"]
+    build: ./backend
+    container_name: jobsearch-worker
+    restart: unless-stopped
+    depends_on:
+      api:
+        condition: service_started
+    environment:
+      DATABASE_URL: postgresql+psycopg://jobsearch:jobsearch@postgres:5432/jobsearch
+      OLLAMA_URL: http://ollama:11434
+      OLLAMA_MODEL: ${OLLAMA_MODEL:-llama3.2:3b}
+    # Ingest + score once a day. The API applies migrations, so the worker waits.
+    command: python -m app.worker.scheduler --daily
+
+  web:
+    profiles: ["app"]
+    build: ./web
+    container_name: jobsearch-web
+    restart: unless-stopped
+    depends_on:
+      - api
+    environment:
+      NEXT_PUBLIC_API_URL: http://localhost:8000
+    ports:
+      - "3000:3000"
+
+volumes:
+  pgdata:
+  ollamadata:
+  generated:

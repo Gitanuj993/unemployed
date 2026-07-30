@@ -1,0 +1,30 @@
+# Web framework
+fastapi==0.115.6
+uvicorn[standard]==0.34.0
+python-multipart==0.0.20
+
+# Settings / validation
+pydantic==2.10.4
+pydantic-settings==2.7.1
+
+# Database (SQLAlchemy 2.0 + psycopg3 + pgvector + migrations)
+SQLAlchemy==2.0.36
+psycopg[binary]==3.2.3
+pgvector==0.3.6
+alembic==1.14.0
+
+# Embeddings (bge-small-en-v1.5). Pulls torch — this is the heavy install.
+sentence-transformers==3.3.1
+
+# HTTP client (Ollama)
+httpx==0.28.1
+
+# Document text extraction for KB onboarding (resume/docs -> text)
+pdfplumber==0.11.4
+python-docx==1.1.2
+
+# ATS-safe PDF generation (pure Python — no GTK/browser system deps)
+fpdf2==2.8.2
+
+# Tests
+pytest==8.3.4
