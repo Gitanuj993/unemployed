@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { CopyButton } from "./copy-button";
 import { usePeople } from "./people-provider";
-import { copy } from "@/lib/copy.ts";
+import { copy } from "@/lib/copy";
 
 /**
  * The setup steps, held back until you are on the wall.

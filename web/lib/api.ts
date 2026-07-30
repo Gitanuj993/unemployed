@@ -529,7 +529,11 @@ export const api = {
 // Deliberately not routed through `req()`, which prefixes the local API and
 // throws on any non-2xx.
 // ---------------------------------------------------------------------------
-const LANDING = process.env.NEXT_PUBLIC_LANDING_URL ?? "http://localhost:3001";
+const LANDING =
+  process.env.NEXT_PUBLIC_LANDING_URL ??
+  (process.env.NODE_ENV === "development"
+    ? "http://localhost:3000"
+    : "https://unemployed-eight.vercel.app");
 
 export type Signup = {
   id: string;

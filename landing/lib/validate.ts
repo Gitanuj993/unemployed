@@ -4,8 +4,8 @@
  * Pure functions on purpose: this is the file worth testing, and none of it
  * needs a request, a database or a network.
  */
-import { COUNTRY_CODES } from "./countries.ts";
-import { GENDERS, type Gender } from "./gender-options.ts";
+import { COUNTRY_CODES } from "./countries";
+import { GENDERS, type Gender } from "./gender-options";
 
 export const MAX_NAME_LENGTH = 24;
 

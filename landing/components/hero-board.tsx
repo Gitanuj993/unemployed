@@ -2,7 +2,7 @@
 
 import { avatarSrc } from "./avatar";
 import { useEveryone } from "./people-provider";
-import { countryName } from "@/lib/countries.ts";
+import { countryName } from "@/lib/countries";
 import type { SignupRow } from "@/lib/db";
 
 /**

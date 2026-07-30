@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 
 import { Logo } from "./logo";
-import { copy } from "@/lib/copy.ts";
+import { copy } from "@/lib/copy";
 
 /**
  * Sticky section nav.

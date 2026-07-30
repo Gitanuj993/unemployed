@@ -3,8 +3,8 @@
 import { AvatarImage } from "./avatar";
 import { SignupForm } from "./signup-form";
 import { useEveryone } from "./people-provider";
-import { countryName } from "@/lib/countries.ts";
-import { copy } from "@/lib/copy.ts";
+import { countryName } from "@/lib/countries";
+import { copy } from "@/lib/copy";
 import type { SignupRow } from "@/lib/db";
 
 /**

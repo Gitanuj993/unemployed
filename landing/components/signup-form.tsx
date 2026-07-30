@@ -4,9 +4,9 @@ import { useMemo, useState } from "react";
 
 import { AvatarImage } from "./avatar";
 import { usePeople } from "./people-provider";
-import { COUNTRIES } from "@/lib/countries.ts";
-import { GENDERS, type Gender } from "@/lib/gender-options.ts";
-import { copy } from "@/lib/copy.ts";
+import { COUNTRIES } from "@/lib/countries";
+import { GENDERS, type Gender } from "@/lib/gender-options";
+import { copy } from "@/lib/copy";
 import type { SignupRow } from "@/lib/db";
 
 function newSeed(): string {
