@@ -31,7 +31,7 @@ export const copy = {
     tagline: "Job hunting is a full time job.",
     taglineEmphasis: "Nobody pays you for it.",
     sub: "So this does the boring half. It finds the roles, scores them against what you have actually done, and writes the resume.",
-    primary: "Put yourself on the wall",
+    primary: "Get started",
     secondary: "See what it does",
     counting: (n: number) =>
       n === 1 ? "1 person on the wall" : `${n} people on the wall`,
@@ -53,24 +53,24 @@ export const copy = {
     heading: "Four things, done properly.",
     items: [
       {
-        title: "Finds the jobs",
-        body: "Reads careers pages straight from ninety plus companies on Greenhouse, Lever, Ashby and SmartRecruiters. Search any company by name to add it.",
+        title: "Builds your pipeline",
+        body: "Reads careers pages straight from ninety plus companies on Greenhouse, Lever, Ashby and SmartRecruiters. Search any company to add it, or just upload a JD you found elsewhere.",
         detail: "No feed, no promoted posts, no listings that closed in March.",
       },
       {
         title: "Shows the arithmetic",
-        body: "Every role gets a score out of a hundred and you can open it. Which required skills you have, which you do not, and how close the match really is.",
-        detail: "Filtered a job out? It names the rule that did it.",
+        body: "Every role gets a score out of a hundred. It cross-references the job description with your personal knowledge base to show exactly which skills you have and which you lack.",
+        detail: "Filtered a job out? It names the exact rule that did it.",
       },
       {
-        title: "Writes a resume you can defend",
-        body: "It rewrites your real accomplishments for the specific job. Every bullet traces back to something you actually did, and invented numbers get thrown out before you see them.",
-        detail: "Paste your own Overleaf resume and it edits that, not a template.",
+        title: "Generates targeted resumes",
+        body: "It writes a tailored resume using only facts from your knowledge base. Every bullet traces back to something you actually did, so you can defend it in an interview. No hallucinations.",
+        detail: "Paste your own Overleaf resume and it edits that, not a generic template.",
       },
       {
-        title: "Keeps track",
-        body: "What you sent, where it went, what came back. Plus who to message at the company and an opening line that is not generic.",
-        detail: "Nothing is scraped. You run the search yourself.",
+        title: "Automates the outreach",
+        body: "Tracks what you sent and what came back. It also figures out exactly who to message at the company and drafts a highly personalized opening line to get their attention.",
+        detail: "Everything stays organized in one place, locally on your machine.",
       },
     ],
   },
@@ -82,7 +82,7 @@ export const copy = {
     points: [
       { title: "Free", body: "There is no server bill, because there is no server." },
       { title: "Private", body: "Your career history sits in a database only you can reach." },
-      { title: "Yours", body: "MIT licensed. Read it, change it, keep it." },
+      { title: "Yours", body: "Read it, change it, keep it." },
     ],
   },
 
@@ -94,13 +94,13 @@ export const copy = {
     steps: [
       {
         title: "Clone it",
-        command: "git clone https://github.com/YOUR_GITHUB/unemployed.git",
+        command: "git clone https://github.com/Maan-Teckwani/unemployed.git",
         note: "Then open the folder in a terminal.",
       },
       {
         title: "Start it",
         command: "docker compose --profile app up -d",
-        note: "Postgres, Ollama and the app, all in containers.",
+        note: "This single command starts everything: the backend, frontend, Postgres, and Ollama.",
       },
       {
         title: "Pull a model",
@@ -112,6 +112,26 @@ export const copy = {
     outroAfter: "and work through the four setup steps it shows you.",
     port: "http://localhost:3000",
     portLabel: "localhost:3000",
+    noDocker: {
+      heading: "No Docker?",
+      steps: [
+        {
+          title: "Install Postgres & Ollama",
+          command: "ollama pull llama3.2:3b",
+          note: "Install them natively. You will also need Node 20+ and Python 3.12+.",
+        },
+        {
+          title: "Start Backend",
+          command: "cd backend && python -m venv .venv && source .venv/bin/activate && pip install -r requirements.txt && alembic upgrade head && uvicorn app.main:app --port 8000",
+          note: "On Windows, use .venv\\Scripts\\Activate.ps1",
+        },
+        {
+          title: "Start Frontend",
+          command: "cd web && npm install && npm run dev",
+          note: "Run this in a new terminal window.",
+        },
+      ],
+    },
   },
 
   join: {
@@ -120,7 +140,7 @@ export const copy = {
     body: "A name, where you are, and a face. No email, nothing gets sent to you, and there is nothing to log into later.",
     why: "It is here so the next person landing on this page can see they are not the only one doing this.",
     nameLabel: "What should we call you",
-    namePlaceholder: "first name is fine",
+    namePlaceholder: "first name + last name",
     countryLabel: "Where are you",
     genderLabel: "Avatar",
     genderOptions: {

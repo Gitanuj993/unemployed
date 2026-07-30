@@ -68,11 +68,22 @@ export function SignupForm({ initialSeed }: { initialSeed: string }) {
     }
   }
 
+  function reset() {
+    localStorage.removeItem("unemployed:signup");
+    window.location.reload();
+  }
+
   if (joined) {
     return (
       <div className="rounded-lg border p-6 text-center">
         <p className="font-medium">{copy.join.joined}</p>
         <p className="text-muted-foreground mt-1 text-sm">{copy.join.joinedBody}</p>
+        <button
+          onClick={reset}
+          className="mt-6 text-xs text-muted-foreground hover:text-foreground underline underline-offset-4 focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50 rounded-sm"
+        >
+          Not seeing your avatar? Join again
+        </button>
       </div>
     );
   }
@@ -91,62 +102,62 @@ export function SignupForm({ initialSeed }: { initialSeed: string }) {
           </button>
         </div>
 
-        <div className="flex-1 space-y-4">
-          <div className="space-y-1.5">
-            <label htmlFor="name" className="text-sm font-medium">
-              {copy.join.nameLabel}
-            </label>
-            <input
-              id="name"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              placeholder={copy.join.namePlaceholder}
-              maxLength={40}
-              className="h-9 w-full rounded-lg border bg-transparent px-3 text-sm focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50"
-            />
-          </div>
-
-          <div className="space-y-1.5">
-            <label htmlFor="country" className="text-sm font-medium">
-              {copy.join.countryLabel}
-            </label>
-            <select
-              id="country"
-              value={country}
-              onChange={(e) => setCountry(e.target.value)}
-              className="h-9 w-full max-w-xs rounded-lg border bg-transparent px-2 text-sm focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50"
-            >
-              {COUNTRIES.map((c) => (
-                <option key={c.code} value={c.code}>
-                  {c.name}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          {/* Its own row: three labels next to a country select wrapped onto two
-              lines and pulled the whole group out of alignment. */}
-          <fieldset className="space-y-1.5">
-            <legend className="text-sm font-medium">{copy.join.genderLabel}</legend>
-            <div className="flex flex-wrap gap-x-5 gap-y-2 pt-1">
-              {GENDERS.map((g) => (
-                <label
-                  key={g}
-                  className="flex cursor-pointer items-center gap-1.5 text-sm whitespace-nowrap"
-                >
-                  <input
-                    type="radio"
-                    name="gender"
-                    value={g}
-                    checked={gender === g}
-                    onChange={() => setGender(g)}
-                    className="size-3.5 accent-foreground"
-                  />
-                  {copy.join.genderOptions[g]}
-                </label>
-              ))}
+        <div className="flex-1 space-y-5">
+          <div className="grid gap-5 sm:grid-cols-2">
+            <div className="space-y-1.5 sm:col-span-2">
+              <label htmlFor="name" className="text-sm font-medium">
+                {copy.join.nameLabel}
+              </label>
+              <input
+                id="name"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                placeholder={copy.join.namePlaceholder}
+                maxLength={40}
+                className="h-9 w-full rounded-lg border bg-transparent px-3 text-sm focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50"
+              />
             </div>
-          </fieldset>
+
+            <div className="space-y-1.5">
+              <label htmlFor="country" className="text-sm font-medium">
+                {copy.join.countryLabel}
+              </label>
+              <select
+                id="country"
+                value={country}
+                onChange={(e) => setCountry(e.target.value)}
+                className="h-9 w-full rounded-lg border bg-transparent px-2 text-sm focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50"
+              >
+                {COUNTRIES.map((c) => (
+                  <option key={c.code} value={c.code}>
+                    {c.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <fieldset className="space-y-1.5">
+              <legend className="text-sm font-medium">{copy.join.genderLabel}</legend>
+              <div className="flex flex-wrap gap-x-5 gap-y-2 pt-1">
+                {GENDERS.map((g) => (
+                  <label
+                    key={g}
+                    className="flex cursor-pointer items-center gap-1.5 text-sm whitespace-nowrap"
+                  >
+                    <input
+                      type="radio"
+                      name="gender"
+                      value={g}
+                      checked={gender === g}
+                      onChange={() => setGender(g)}
+                      className="size-3.5 accent-foreground"
+                    />
+                    {copy.join.genderOptions[g]}
+                  </label>
+                ))}
+              </div>
+            </fieldset>
+          </div>
 
           {error && (
             <p className="rounded-md border px-3 py-2 text-sm font-medium" role="alert">

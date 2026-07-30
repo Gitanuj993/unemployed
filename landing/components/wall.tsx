@@ -24,42 +24,46 @@ export function Wall({
 
   return (
     <>
-      <section id="wall" className="scroll-mt-20 pt-28">
-        <h2 className="text-muted-foreground mb-6 font-mono text-[11px] tracking-[0.2em] uppercase">
-          {copy.join.heading}
-        </h2>
-        <p className="text-muted-foreground mb-6 text-sm">{copy.join.body}</p>
-        <SignupForm initialSeed={initialSeed} />
-        <p className="text-muted-foreground mt-3 text-xs">{copy.join.why}</p>
+      <section id="wall" className="scroll-mt-20 pt-28 px-6 md:px-12 lg:px-24">
+        <div className="mx-auto w-full max-w-5xl">
+          <h2 className="text-muted-foreground mb-6 font-mono text-[11px] tracking-[0.2em] uppercase">
+            {copy.join.heading}
+          </h2>
+          <p className="text-muted-foreground mb-6 text-sm">{copy.join.body}</p>
+          <SignupForm initialSeed={initialSeed} />
+          <p className="text-muted-foreground mt-3 text-xs">{copy.join.why}</p>
+        </div>
       </section>
 
-      <section className="pt-28">
-        <h2 className="text-muted-foreground mb-6 font-mono text-[11px] tracking-[0.2em] uppercase">
-          {copy.wall.heading}
-        </h2>
+      <section className="pt-28 pb-32 px-6 md:px-12 lg:px-24">
+        <div className="mx-auto w-full max-w-5xl">
+          <h2 className="text-muted-foreground mb-6 font-mono text-[11px] tracking-[0.2em] uppercase">
+            {copy.wall.heading}
+          </h2>
 
-        {people.length === 0 ? (
-          <p className="text-muted-foreground text-sm">{copy.wall.empty}</p>
-        ) : (
-          <>
-            <p className="text-muted-foreground mb-6 text-sm">
-              {copy.wall.caption(people.length)}
-            </p>
-            <ul className="grid grid-cols-3 gap-x-4 gap-y-6 sm:grid-cols-5">
-              {people.map((person) => (
-                <li key={person.id} className="flex flex-col items-center text-center">
-                  <AvatarImage seed={person.seed} gender={person.gender} />
-                  <span className="mt-2 w-full truncate text-xs font-medium">
-                    {person.name}
-                  </span>
-                  <span className="text-muted-foreground w-full truncate text-[11px]">
-                    {countryName(person.country)}
-                  </span>
-                </li>
-              ))}
-            </ul>
-          </>
-        )}
+          {people.length === 0 ? (
+            <p className="text-muted-foreground text-sm">{copy.wall.empty}</p>
+          ) : (
+            <>
+              <p className="text-muted-foreground mb-6 text-sm">
+                {copy.wall.caption(people.length)}
+              </p>
+              <ul className="grid grid-cols-3 gap-x-4 gap-y-6 sm:grid-cols-5">
+                {people.map((person) => (
+                  <li key={person.id} className="flex flex-col items-center text-center">
+                    <AvatarImage seed={person.seed} gender={person.gender} />
+                    <span className="mt-2 w-full truncate text-xs font-medium">
+                      {person.name}
+                    </span>
+                    <span className="text-muted-foreground w-full truncate text-[11px]">
+                      {countryName(person.country)}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            </>
+          )}
+        </div>
       </section>
     </>
   );

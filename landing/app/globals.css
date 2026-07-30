@@ -267,7 +267,7 @@
 }
 
 .hero-board__face:hover {
-  z-index: 4;
+  z-index: 20;
 }
 
 .hero-board__face:hover img {

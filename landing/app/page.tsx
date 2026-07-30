@@ -52,12 +52,12 @@ export default function Home() {
 
 function Hero() {
   return (
-    <section className="relative flex min-h-[100svh] flex-col items-center justify-center overflow-hidden px-6 text-center">
+    <section className="relative flex min-h-[100svh] flex-col items-center justify-center overflow-hidden px-6 md:px-12 lg:px-24 pt-24 pb-12 text-center">
       <Suspense fallback={null}>
         <HeroCrowd />
       </Suspense>
 
-      <div className="relative z-10 flex max-w-3xl flex-col items-center">
+      <div className="relative z-10 flex max-w-2xl flex-col items-center">
         <p className="border-foreground/25 text-foreground/75 mb-10 rounded-full border px-4 py-1.5 font-mono text-[11px] tracking-[0.14em] uppercase backdrop-blur-sm sm:text-xs">
           {copy.hero.badge}
         </p>
@@ -66,12 +66,12 @@ function Hero() {
           <Logo size="hero" />
         </h1>
 
-        <p className="mt-10 font-serif text-4xl leading-[1.12] text-balance sm:text-6xl">
+        <p className="mt-10 font-serif text-4xl leading-[1.12] text-balance sm:text-5xl">
           {copy.hero.tagline}{" "}
           <span className="text-muted-foreground italic">{copy.hero.taglineEmphasis}</span>
         </p>
 
-        <p className="text-muted-foreground mt-7 max-w-xl text-lg leading-relaxed text-balance">
+        <p className="text-muted-foreground mt-7 max-w-lg text-base leading-relaxed text-balance">
           {copy.hero.sub}
         </p>
 
@@ -134,12 +134,12 @@ function What() {
         </h2>
       </Reveal>
 
-      <div className="mt-14 grid gap-5 md:grid-cols-2">
+      <div className="mt-14 grid gap-8 md:gap-12 md:grid-cols-2">
         {copy.what.items.map((item, i) => (
           <Reveal key={item.title} delay={(i % 2) * 90}>
             {/* Offset every other card so the pair reads as two columns rather
                 than one wide row cut in half. */}
-            <article className={`card h-full ${i % 2 === 1 ? "md:mt-10" : ""}`}>
+            <article className={`card h-full ${i % 2 === 1 ? "md:mt-16" : ""}`}>
               <span className="text-muted-foreground/60 font-mono text-xs tabular-nums">
                 {String(i + 1).padStart(2, "0")}
               </span>
@@ -189,10 +189,9 @@ function Local() {
 function Footer() {
   return (
     <footer className="border-t">
-      <div className="text-muted-foreground mx-auto w-full max-w-6xl px-6 py-10 text-sm">
+      <div className="text-muted-foreground mx-auto w-full max-w-5xl px-6 md:px-12 lg:px-24 py-10 text-sm">
         <p>{copy.footer.built}</p>
         <p className="mt-2 flex flex-wrap gap-x-5 gap-y-1 text-xs">
-          <span>{copy.footer.licence}</span>
           <span>{copy.footer.avatars}</span>
         </p>
       </div>
@@ -249,8 +248,8 @@ function Band({
   className?: string;
 }) {
   return (
-    <section id={id} className={`scroll-mt-24 px-6 py-24 sm:py-32 ${className}`}>
-      <div className="mx-auto w-full max-w-6xl">{children}</div>
+    <section id={id} className={`scroll-mt-24 px-6 md:px-12 lg:px-24 py-24 sm:py-32 ${className}`}>
+      <div className="mx-auto w-full max-w-5xl">{children}</div>
     </section>
   );
 }

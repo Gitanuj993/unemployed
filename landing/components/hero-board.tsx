@@ -26,7 +26,7 @@ import type { SignupRow } from "@/lib/db";
  * ellipse inscribed in it leaves its corners uncovered, which is exactly where
  * the wide badge at the top ends, and faces kept landing on top of it.
  */
-const KEEP_OUT = { left: 26, right: 74, top: 12, bottom: 88 };
+const KEEP_OUT = { left: 15, right: 85, top: 8, bottom: 92 };
 
 function hash(text: string, salt: number): number {
   let value = salt * 2654435761;
@@ -38,8 +38,8 @@ function hash(text: string, salt: number): number {
 }
 
 function place(seed: string) {
-  let x = 3 + hash(seed, 1) * 94;
-  let y = 4 + hash(seed, 2) * 92;
+  let x = 5 + hash(seed, 0) * 90;
+  let y = 15 + hash(seed, 1) * 80;
 
   // Landed on the copy? Move it out through whichever side is nearest, so the
   // crowd hugs the text block instead of forming a ring around it.
@@ -120,7 +120,7 @@ function spread(spots: ReturnType<typeof place>[]): ReturnType<typeof place>[] {
   return out.map((s) => ({
     ...s,
     left: `${Math.min(Math.max(s.x, 2), 96)}%`,
-    top: `${Math.min(Math.max(s.y, 3), 93)}%`,
+    top: `${Math.min(Math.max(s.y, 15), 93)}%`,
   }));
 }
 

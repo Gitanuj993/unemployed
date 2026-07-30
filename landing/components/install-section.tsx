@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { CopyButton } from "./copy-button";
 import { usePeople } from "./people-provider";
 import { copy } from "@/lib/copy.ts";
@@ -17,8 +18,8 @@ export function InstallSection() {
   const { joined } = usePeople();
 
   return (
-    <section id="install" className="scroll-mt-24 border-t px-6 py-24 sm:py-32">
-      <div className="mx-auto w-full max-w-6xl">
+    <section id="install" className="scroll-mt-24 border-t px-6 md:px-12 lg:px-24 py-24 sm:py-32">
+      <div className="mx-auto w-full max-w-5xl">
         <div className="grid gap-10 md:grid-cols-12 md:gap-14">
           <div className="md:col-span-4">
             <p className="text-muted-foreground font-mono text-[11px] tracking-[0.2em] uppercase">
@@ -42,30 +43,78 @@ export function InstallSection() {
 }
 
 function Steps() {
+  const [activeTab, setActiveTab] = useState<"docker" | "native">("docker");
+
   return (
-    <>
-      <ol className="space-y-8">
-        {copy.install.steps.map((step, i) => (
-          <li key={step.title} className="space-y-3">
-            <div className="flex items-baseline gap-3">
-              <span className="text-muted-foreground/60 font-mono text-xs tabular-nums">
-                {String(i + 1).padStart(2, "0")}
-              </span>
-              <h3 className="text-lg font-medium">{step.title}</h3>
-            </div>
-            <CopyButton command={step.command} />
-            <p className="text-muted-foreground text-sm">{step.note}</p>
-          </li>
-        ))}
-      </ol>
-      <p className="mt-9 text-base">
-        {copy.install.outroBefore}{" "}
-        <a href={copy.install.port} className="font-mono underline underline-offset-4">
-          {copy.install.portLabel}
-        </a>{" "}
-        {copy.install.outroAfter}
-      </p>
-    </>
+    <div>
+      <div className="flex gap-6 border-b border-border mb-8">
+        <button
+          className={`pb-3 text-sm font-medium transition-colors ${
+            activeTab === "docker"
+              ? "border-b-2 border-foreground text-foreground"
+              : "text-muted-foreground hover:text-foreground"
+          }`}
+          onClick={() => setActiveTab("docker")}
+        >
+          With Docker (Recommended)
+        </button>
+        <button
+          className={`pb-3 text-sm font-medium transition-colors ${
+            activeTab === "native"
+              ? "border-b-2 border-foreground text-foreground"
+              : "text-muted-foreground hover:text-foreground"
+          }`}
+          onClick={() => setActiveTab("native")}
+        >
+          {copy.install.noDocker.heading}
+        </button>
+      </div>
+
+      {activeTab === "docker" && (
+        <div className="animate-in fade-in slide-in-from-bottom-2 duration-500">
+          <ol className="space-y-8">
+            {copy.install.steps.map((step, i) => (
+              <li key={step.title} className="space-y-3">
+                <div className="flex items-baseline gap-3">
+                  <span className="text-muted-foreground/60 font-mono text-xs tabular-nums">
+                    {String(i + 1).padStart(2, "0")}
+                  </span>
+                  <h4 className="text-sm font-medium">{step.title}</h4>
+                </div>
+                <CopyButton command={step.command} />
+                <p className="text-muted-foreground text-xs">{step.note}</p>
+              </li>
+            ))}
+          </ol>
+          <p className="mt-9 text-sm">
+            {copy.install.outroBefore}{" "}
+            <a href={copy.install.port} className="font-mono underline underline-offset-4">
+              {copy.install.portLabel}
+            </a>{" "}
+            {copy.install.outroAfter}
+          </p>
+        </div>
+      )}
+
+      {activeTab === "native" && (
+        <div className="animate-in fade-in slide-in-from-bottom-2 duration-500">
+          <ol className="space-y-8">
+            {copy.install.noDocker.steps.map((step, i) => (
+              <li key={step.title} className="space-y-3">
+                <div className="flex items-baseline gap-3">
+                  <span className="text-muted-foreground/60 font-mono text-xs tabular-nums">
+                    {String(i + 1).padStart(2, "0")}
+                  </span>
+                  <h4 className="text-sm font-medium">{step.title}</h4>
+                </div>
+                <CopyButton command={step.command} />
+                <p className="text-muted-foreground text-xs">{step.note}</p>
+              </li>
+            ))}
+          </ol>
+        </div>
+      )}
+    </div>
   );
 }
 
