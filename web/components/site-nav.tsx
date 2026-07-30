@@ -16,6 +16,9 @@ const links = [
   { href: "/profile", label: "Profile" },
   { href: "/templates", label: "Templates" },
   { href: "/settings", label: "Filters" },
+  // Last: the list is ordered by how often the daily loop needs a page, and the
+  // wall is needed never.
+  { href: "/board", label: "Board" },
 ];
 
 export function SiteNav() {

@@ -517,3 +517,56 @@ export const api = {
       body: JSON.stringify(body),
     }),
 };
+
+// ---------------------------------------------------------------------------
+// The community wall.
+//
+// It lives on the hosted landing page rather than the local backend, and it is
+// the only thing in this app that talks to the internet. Everything below is
+// optional by design: it must never take a page down, and being offline has to
+// look the same as a wall that happens to be empty.
+//
+// Deliberately not routed through `req()`, which prefixes the local API and
+// throws on any non-2xx.
+// ---------------------------------------------------------------------------
+const LANDING = process.env.NEXT_PUBLIC_LANDING_URL ?? "http://localhost:3001";
+
+export type Signup = {
+  id: string;
+  name: string;
+  country: string;
+  gender: "female" | "male" | "neutral";
+  seed: string;
+  created_at: string;
+};
+
+/** Avatars are drawn by the landing site, so this app needs no avatar code. */
+export function avatarUrl(seed: string, gender: string): string {
+  return `${LANDING}/api/avatar?seed=${encodeURIComponent(seed)}&gender=${encodeURIComponent(gender)}`;
+}
+
+export function wallUrl(): string {
+  return LANDING;
+}
+
+/**
+ * Returns null rather than throwing, and gives up after four seconds. Offline
+ * is a normal state for a local-first tool, not an error worth a spinner on a
+ * train.
+ */
+export async function fetchSignups(
+  limit = 200,
+): Promise<{ count: number; signups: Signup[] } | null> {
+  try {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 4000);
+    const res = await fetch(`${LANDING}/api/signups?limit=${limit}`, {
+      signal: controller.signal,
+      cache: "no-store",
+    });
+    clearTimeout(timer);
+    return res.ok ? await res.json() : null;
+  } catch {
+    return null;
+  }
+}

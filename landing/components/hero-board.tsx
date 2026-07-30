@@ -1,6 +1,7 @@
 "use client";
 
 import { avatarSrc } from "./avatar";
+import { useEveryone } from "./people-provider";
 import { countryName } from "@/lib/countries.ts";
 import type { SignupRow } from "@/lib/db";
 
@@ -18,9 +19,14 @@ import type { SignupRow } from "@/lib/db";
  * pushed outside it rather than hidden.
  */
 
-const CENTRE = { x: 50, y: 46 };
-// The clear zone the copy sits in, as a percentage of the hero.
-const KEEP_OUT = { x: 33, y: 27 };
+/**
+ * The block the copy occupies, as percentages of the hero.
+ *
+ * A rectangle rather than an ellipse, because the copy is a rectangle. An
+ * ellipse inscribed in it leaves its corners uncovered, which is exactly where
+ * the wide badge at the top ends, and faces kept landing on top of it.
+ */
+const KEEP_OUT = { left: 26, right: 74, top: 12, bottom: 88 };
 
 function hash(text: string, salt: number): number {
   let value = salt * 2654435761;
@@ -32,26 +38,39 @@ function hash(text: string, salt: number): number {
 }
 
 function place(seed: string) {
-  const x = 3 + hash(seed, 1) * 94;
-  const y = 4 + hash(seed, 2) * 92;
+  let x = 3 + hash(seed, 1) * 94;
+  let y = 4 + hash(seed, 2) * 92;
 
-  // How far inside the keep-out ellipse this landed. Below 1 means it is on top
-  // of the copy, so push it out along the same direction.
-  const dx = (x - CENTRE.x) / KEEP_OUT.x;
-  const dy = (y - CENTRE.y) / KEEP_OUT.y;
-  const distance = Math.hypot(dx, dy) || 0.0001;
+  // Landed on the copy? Move it out through whichever side is nearest, so the
+  // crowd hugs the text block instead of forming a ring around it.
+  const inside =
+    x > KEEP_OUT.left && x < KEEP_OUT.right && y > KEEP_OUT.top && y < KEEP_OUT.bottom;
 
-  const scale = distance < 1 ? 1 / distance : 1;
-  const finalX = CENTRE.x + dx * KEEP_OUT.x * scale;
-  const finalY = CENTRE.y + dy * KEEP_OUT.y * scale;
+  if (inside) {
+    const outLeft = x - KEEP_OUT.left;
+    const outRight = KEEP_OUT.right - x;
+    const outTop = y - KEEP_OUT.top;
+    const outBottom = KEEP_OUT.bottom - y;
+    const nearest = Math.min(outLeft, outRight, outTop, outBottom);
+
+    if (nearest === outLeft) x = KEEP_OUT.left - 2;
+    else if (nearest === outRight) x = KEEP_OUT.right + 2;
+    else if (nearest === outTop) y = KEEP_OUT.top - 2;
+    else y = KEEP_OUT.bottom + 2;
+  }
+
+  const finalX = x;
+  const finalY = y;
 
   // Further from the copy reads as further away: smaller and fainter.
   const depth = hash(seed, 3);
   return {
     left: `${Math.min(Math.max(finalX, 2), 95)}%`,
     top: `${Math.min(Math.max(finalY, 3), 92)}%`,
-    size: 38 + Math.round(depth * 26),
-    opacity: 0.26 + depth * 0.24,
+    size: 42 + Math.round(depth * 28),
+    // Visible enough to read as a crowd at a glance, faint enough that the
+    // headline still wins. Hover takes whichever one you point at to full.
+    opacity: 0.5 + depth * 0.28,
   };
 }
 
@@ -109,7 +128,10 @@ function spread(spots: ReturnType<typeof place>[]): ReturnType<typeof place>[] {
 // wall gets long. Everyone is still on the wall itself further down.
 const MAX_FACES = 60;
 
-export function HeroBoard({ people }: { people: SignupRow[] }) {
+export function HeroBoard({ fromServer }: { fromServer: SignupRow[] }) {
+  // Anyone who joins while the page is open appears here immediately, which is
+  // the entire point of the crowd: you should see yourself land in it.
+  const people = useEveryone(fromServer);
   if (people.length === 0) return null;
 
   const shown = people.slice(0, MAX_FACES);

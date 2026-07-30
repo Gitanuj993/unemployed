@@ -1,9 +1,11 @@
 import { Suspense, cache } from "react";
 
-import { CopyButton } from "@/components/copy-button";
 import { HeroBoard } from "@/components/hero-board";
+import { HeroCountLine } from "@/components/hero-count";
+import { InstallSection } from "@/components/install-section";
 import { Logo } from "@/components/logo";
 import { PageNav } from "@/components/page-nav";
+import { PeopleProvider } from "@/components/people-provider";
 import { Reveal } from "@/components/reveal";
 import { Wall } from "@/components/wall";
 import { recentSignups, type SignupRow } from "@/lib/db";
@@ -17,107 +19,37 @@ export const dynamic = "force-dynamic";
  * One page, one scroll, black and white. The only colour anywhere on it is
  * inside the avatar SVGs.
  *
- * The hero is the exception to the "nothing above the fold touches the
- * database" rule, because the crowd behind the headline is the argument. It is
- * still wrapped in Suspense, so a cold Neon delays the faces and nothing else:
- * the wordmark, the pitch and the buttons are on screen either way.
+ * Sections alternate their weight left and right rather than running down a
+ * single narrow column, so the eye has somewhere to go on the way down.
+ *
+ * Everything below the hero streams: the crowd, the wall and the counts each
+ * sit behind Suspense, so a cold Neon delays faces and nothing else.
  */
 export default function Home() {
   return (
-    <>
+    <PeopleProvider>
       <PageNav />
       <main id="top">
         <Hero />
 
-        <div className="mx-auto w-full max-w-2xl px-6 pb-24">
-          <Reveal>
-            <Section id="problem" heading={copy.problem.heading}>
-              <ul className="space-y-4">
-                {copy.problem.lines.map((line) => (
-                  <li key={line} className="flex gap-4">
-                    <span aria-hidden className="text-muted-foreground/50 font-mono text-xs">
-                      /
-                    </span>
-                    <span className="text-muted-foreground">{line}</span>
-                  </li>
-                ))}
-              </ul>
-              <p className="mt-6 font-serif text-xl leading-snug">{copy.problem.closer}</p>
-            </Section>
-          </Reveal>
+        <Story />
 
-          <Section id="what" heading={copy.what.heading}>
-            <div className="divide-y rounded-xl border">
-              {copy.what.items.map((item, i) => (
-                <Reveal key={item.title} delay={i * 70}>
-                  <div className="p-6">
-                    <h3 className="font-serif text-xl">{item.title}</h3>
-                    <p className="text-muted-foreground mt-2 text-sm leading-relaxed">
-                      {item.body}
-                    </p>
-                  </div>
-                </Reveal>
-              ))}
-            </div>
-          </Section>
+        <What />
 
-          <Reveal>
-            <Section id="local" heading={copy.local.heading}>
-              <p className="font-serif text-2xl leading-snug">{copy.local.body}</p>
-              <p className="text-muted-foreground mt-6 border-l pl-5 text-sm">
-                {copy.local.aside}
-              </p>
-            </Section>
-          </Reveal>
+        <Local />
 
-          <Reveal>
-            <Section id="install" heading={copy.install.heading}>
-              <p className="text-muted-foreground text-sm">{copy.install.intro}</p>
-              <ol className="mt-8 space-y-7">
-                {copy.install.steps.map((step, i) => (
-                  <li key={step.title} className="space-y-2.5">
-                    <div className="flex items-baseline gap-3">
-                      <span className="text-muted-foreground font-mono text-xs tabular-nums">
-                        {String(i + 1).padStart(2, "0")}
-                      </span>
-                      <h3 className="font-medium">{step.title}</h3>
-                    </div>
-                    <CopyButton command={step.command} />
-                    <p className="text-muted-foreground pl-1 text-xs">{step.note}</p>
-                  </li>
-                ))}
-              </ol>
-              <p className="mt-8 text-sm">
-                {copy.install.outroBefore}{" "}
-                <a href={copy.install.port} className="font-mono underline underline-offset-4">
-                  {copy.install.portLabel}
-                </a>{" "}
-                {copy.install.outroAfter}
-              </p>
-            </Section>
-          </Reveal>
+        <Suspense fallback={null}>
+          <WallAndInstall />
+        </Suspense>
 
-          <Suspense fallback={<WallSkeleton />}>
-            <WallSection />
-          </Suspense>
-
-          <footer className="text-muted-foreground mt-28 border-t pt-8 text-xs">
-            <p>{copy.footer.built}</p>
-            <p className="mt-2 flex flex-wrap gap-x-4 gap-y-1">
-              <span>{copy.footer.licence}</span>
-              <span>{copy.footer.avatars}</span>
-            </p>
-          </footer>
-        </div>
+        <Footer />
       </main>
-    </>
+    </PeopleProvider>
   );
 }
 
-/**
- * Full height, the wordmark front and centre, the crowd behind it. The two
- * buttons are the only things asked of a first-time visitor.
- */
+/* -------------------------------------------------------------------------- */
+
 function Hero() {
   return (
     <section className="relative flex min-h-[100svh] flex-col items-center justify-center overflow-hidden px-6 text-center">
@@ -125,33 +57,29 @@ function Hero() {
         <HeroCrowd />
       </Suspense>
 
-      <div className="relative z-10 flex flex-col items-center">
-        <p className="text-muted-foreground mb-8 font-mono text-[11px] tracking-[0.2em] uppercase">
-          {copy.hero.eyebrow}
+      <div className="relative z-10 flex max-w-3xl flex-col items-center">
+        <p className="border-foreground/25 text-foreground/75 mb-10 rounded-full border px-4 py-1.5 font-mono text-[11px] tracking-[0.14em] uppercase backdrop-blur-sm sm:text-xs">
+          {copy.hero.badge}
         </p>
 
         <h1>
           <Logo size="hero" />
         </h1>
 
-        <p className="mt-8 max-w-xl font-serif text-2xl leading-snug text-balance sm:text-3xl">
-          {copy.hero.tagline}
+        <p className="mt-10 font-serif text-4xl leading-[1.12] text-balance sm:text-6xl">
+          {copy.hero.tagline}{" "}
+          <span className="text-muted-foreground italic">{copy.hero.taglineEmphasis}</span>
         </p>
-        <p className="text-muted-foreground mt-5 max-w-lg text-sm leading-relaxed text-balance">
+
+        <p className="text-muted-foreground mt-7 max-w-xl text-lg leading-relaxed text-balance">
           {copy.hero.sub}
         </p>
 
-        <div className="mt-9 flex flex-wrap items-center justify-center gap-3">
-          <a
-            href="#wall"
-            className="border-foreground bg-foreground text-background rounded-lg border px-5 py-2.5 text-sm font-medium transition-opacity hover:opacity-85 focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:outline-none"
-          >
+        <div className="mt-11 flex flex-wrap items-center justify-center gap-3">
+          <a href="#wall" className="btn-solid">
             {copy.hero.primary}
           </a>
-          <a
-            href="#what"
-            className="rounded-lg border px-5 py-2.5 text-sm font-medium transition-colors hover:bg-muted focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:outline-none"
-          >
+          <a href="#what" className="btn-outline">
             {copy.hero.secondary}
           </a>
         </div>
@@ -171,22 +99,130 @@ function Hero() {
   );
 }
 
+/** Why it exists, in the first person, because that is the honest version. */
+function Story() {
+  return (
+    <Band id="story">
+      <Reveal className="grid gap-10 md:grid-cols-12 md:gap-14">
+        <div className="md:col-span-4">
+          <Label>{copy.story.label}</Label>
+          <h2 className="mt-5 font-serif text-3xl leading-tight sm:text-4xl">
+            {copy.story.heading}
+          </h2>
+        </div>
+        <div className="space-y-6 md:col-span-7 md:col-start-6">
+          {copy.story.body.map((paragraph) => (
+            <p key={paragraph} className="text-lg leading-relaxed">
+              {paragraph}
+            </p>
+          ))}
+          <p className="text-muted-foreground border-l pl-5 text-base">{copy.story.kicker}</p>
+        </div>
+      </Reveal>
+    </Band>
+  );
+}
+
+/** The features, as cards, staggered so the grid does not arrive all at once. */
+function What() {
+  return (
+    <Band id="what">
+      <Reveal className="max-w-2xl">
+        <Label>{copy.what.label}</Label>
+        <h2 className="mt-5 font-serif text-3xl leading-tight sm:text-4xl">
+          {copy.what.heading}
+        </h2>
+      </Reveal>
+
+      <div className="mt-14 grid gap-5 md:grid-cols-2">
+        {copy.what.items.map((item, i) => (
+          <Reveal key={item.title} delay={(i % 2) * 90}>
+            {/* Offset every other card so the pair reads as two columns rather
+                than one wide row cut in half. */}
+            <article className={`card h-full ${i % 2 === 1 ? "md:mt-10" : ""}`}>
+              <span className="text-muted-foreground/60 font-mono text-xs tabular-nums">
+                {String(i + 1).padStart(2, "0")}
+              </span>
+              <h3 className="mt-4 font-serif text-2xl leading-tight">{item.title}</h3>
+              <p className="mt-3 text-base leading-relaxed">{item.body}</p>
+              <p className="text-muted-foreground mt-4 border-t pt-4 text-sm">
+                {item.detail}
+              </p>
+            </article>
+          </Reveal>
+        ))}
+      </div>
+    </Band>
+  );
+}
+
+/** The differentiator, so it gets the widest treatment on the page. */
+function Local() {
+  return (
+    <Band id="local">
+      <Reveal className="grid gap-10 md:grid-cols-12 md:gap-14">
+        <div className="md:col-span-7">
+          <Label>{copy.local.label}</Label>
+          <h2 className="mt-5 font-serif text-3xl leading-tight sm:text-5xl">
+            {copy.local.heading}
+          </h2>
+          <p className="text-muted-foreground mt-7 max-w-xl text-lg leading-relaxed">
+            {copy.local.body}
+          </p>
+        </div>
+
+        <ul className="space-y-4 md:col-span-4 md:col-start-9">
+          {copy.local.points.map((point) => (
+            <li key={point.title} className="card">
+              <h3 className="font-serif text-xl">{point.title}</h3>
+              <p className="text-muted-foreground mt-1.5 text-sm leading-relaxed">
+                {point.body}
+              </p>
+            </li>
+          ))}
+        </ul>
+      </Reveal>
+    </Band>
+  );
+}
+
+function Footer() {
+  return (
+    <footer className="border-t">
+      <div className="text-muted-foreground mx-auto w-full max-w-6xl px-6 py-10 text-sm">
+        <p>{copy.footer.built}</p>
+        <p className="mt-2 flex flex-wrap gap-x-5 gap-y-1 text-xs">
+          <span>{copy.footer.licence}</span>
+          <span>{copy.footer.avatars}</span>
+        </p>
+      </div>
+    </footer>
+  );
+}
+
+/* -------------------------------------------------------------------------- */
+
 async function HeroCrowd() {
-  return <HeroBoard people={await people()} />;
+  return <HeroBoard fromServer={await people()} />;
 }
 
 async function HeroCount() {
   const everyone = await people();
-  if (everyone.length === 0) return null;
+  return <HeroCountLine fromServer={everyone} />;
+}
+
+async function WallAndInstall() {
+  const everyone = await people();
   return (
-    <p className="text-muted-foreground mt-7 font-mono text-[11px] tracking-wider">
-      {copy.hero.counting(everyone.length)}
-    </p>
+    <>
+      <Wall fromServer={everyone} initialSeed={crypto.randomUUID().slice(0, 8)} />
+      <InstallSection />
+    </>
   );
 }
 
 /**
- * One read per request, shared by the hero and the wall.
+ * One read per request, shared by the hero, the counter and the wall.
  *
  * An unreachable database returns an empty list rather than throwing: the page
  * is still worth reading without the faces on it.
@@ -200,41 +236,29 @@ const people = cache(async (): Promise<SignupRow[]> => {
   }
 });
 
-async function WallSection() {
-  return (
-    <Wall initial={await people()} initialSeed={crypto.randomUUID().slice(0, 8)} />
-  );
-}
+/* -------------------------------------------------------------------------- */
 
-function WallSkeleton() {
-  return (
-    <section className="mt-28">
-      <div className="bg-muted h-3 w-24 animate-pulse rounded" />
-      <div className="mt-6 grid grid-cols-3 gap-4 sm:grid-cols-5">
-        {Array.from({ length: 10 }, (_, i) => (
-          <div key={i} className="bg-muted size-14 animate-pulse rounded-full" />
-        ))}
-      </div>
-    </section>
-  );
-}
-
-/** Every block below the hero has the same rhythm. */
-function Section({
+/** A full width section with the page's vertical rhythm. */
+function Band({
   id,
-  heading,
   children,
+  className = "",
 }: {
-  id: string;
-  heading: string;
+  id?: string;
   children: React.ReactNode;
+  className?: string;
 }) {
   return (
-    <section id={id} className="scroll-mt-20 pt-28">
-      <h2 className="text-muted-foreground mb-6 font-mono text-[11px] tracking-[0.2em] uppercase">
-        {heading}
-      </h2>
-      {children}
+    <section id={id} className={`scroll-mt-24 px-6 py-24 sm:py-32 ${className}`}>
+      <div className="mx-auto w-full max-w-6xl">{children}</div>
     </section>
+  );
+}
+
+function Label({ children }: { children: React.ReactNode }) {
+  return (
+    <p className="text-muted-foreground font-mono text-[11px] tracking-[0.2em] uppercase">
+      {children}
+    </p>
   );
 }

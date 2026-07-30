@@ -1,23 +1,17 @@
 "use client";
 
-import { useMemo, useState, useSyncExternalStore } from "react";
+import { useMemo, useState } from "react";
 
 import { AvatarImage } from "./avatar";
+import { usePeople } from "./people-provider";
 import { COUNTRIES } from "@/lib/countries.ts";
 import { GENDERS, type Gender } from "@/lib/gender-options.ts";
 import { copy } from "@/lib/copy.ts";
 import type { SignupRow } from "@/lib/db";
 
-const STORAGE_KEY = "unemployed:signup";
-
 function newSeed(): string {
   return crypto.randomUUID().slice(0, 8);
 }
-
-/** localStorage is state React does not own, so it is read the sanctioned way. */
-const NEVER_CHANGES = () => () => {};
-const hasJoinedBefore = () => localStorage.getItem(STORAGE_KEY) !== null;
-const notOnTheServer = () => false;
 
 /**
  * Name, country, gender, face.
@@ -29,27 +23,14 @@ const notOnTheServer = () => false;
  * The first seed arrives as a prop from the server rather than being drawn on
  * mount, so the markup React sends and the markup it hydrates are the same.
  */
-export function SignupForm({
-  initialSeed,
-  onJoined,
-}: {
-  initialSeed: string;
-  onJoined: (row: SignupRow) => void;
-}) {
+export function SignupForm({ initialSeed }: { initialSeed: string }) {
+  const { joined, add } = usePeople();
   const [name, setName] = useState("");
   const [country, setCountry] = useState("IN");
   const [gender, setGender] = useState<Gender>("neutral");
   const [seed, setSeed] = useState(initialSeed);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<{ message: string; field?: string } | null>(null);
-  const [justJoined, setJustJoined] = useState(false);
-
-  const joinedBefore = useSyncExternalStore(
-    NEVER_CHANGES,
-    hasJoinedBefore,
-    notOnTheServer,
-  );
-  const joined = justJoined || joinedBefore;
 
   const clientId = useMemo(() => {
     if (typeof window === "undefined") return null;
@@ -77,9 +58,9 @@ export function SignupForm({
         return;
       }
 
-      localStorage.setItem(STORAGE_KEY, JSON.stringify({ id: data.id, seed: data.seed }));
-      setJustJoined(true);
-      onJoined(data as SignupRow);
+      // The provider writes localStorage and tells the hero, the counter and
+      // the install steps at once.
+      add(data as SignupRow);
     } catch {
       setError({ message: copy.join.errors.generic });
     } finally {

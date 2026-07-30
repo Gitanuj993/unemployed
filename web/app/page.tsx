@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import { api, type SetupStatus } from "@/lib/api";
+import { BoardStrip } from "@/components/board/board-strip";
 import { Logo } from "@/components/logo";
 import { PipelineRunner } from "@/components/pipeline/pipeline-runner";
 import { Button } from "@/components/ui/button";
@@ -130,6 +131,10 @@ export default function Home() {
         </div>
         <PipelineRunner onFinished={refresh} />
       </div>
+
+      <Separator />
+
+      <BoardStrip />
 
       <p className="text-xs text-muted-foreground">
         Found a job elsewhere?{" "}

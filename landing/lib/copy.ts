@@ -13,75 +13,84 @@ export const copy = {
   meta: {
     title: "unemployed",
     description:
-      "A job hunting tool that runs on your own laptop. Finds roles, shows you why they fit, and writes a resume from things you actually did.",
+      "A free job hunting tool that runs on your own laptop. Finds roles, shows you why they fit, and writes a resume from things you actually did.",
   },
 
   nav: {
     links: [
+      { href: "#story", label: "Why" },
       { href: "#what", label: "What it does" },
-      { href: "#local", label: "Why local" },
-      { href: "#install", label: "Run it" },
+      { href: "#local", label: "Your laptop" },
       { href: "#wall", label: "The wall" },
     ],
     cta: "Join the wall",
   },
 
   hero: {
-    // Sits above the wordmark, small, so the joke has something to land against.
-    eyebrow: "For students doing an off campus job hunt",
-    tagline: "Job hunting is a full time job. Nobody pays you for it.",
-    sub: "This does the boring half. It reads job boards, scores every role against what you have actually done, and writes the resume. All of it on your own laptop, for free.",
+    badge: "Free forever. No account. Runs on your laptop.",
+    tagline: "Job hunting is a full time job.",
+    taglineEmphasis: "Nobody pays you for it.",
+    sub: "So this does the boring half. It finds the roles, scores them against what you have actually done, and writes the resume.",
     primary: "Put yourself on the wall",
-    secondary: "See how it works",
+    secondary: "See what it does",
     counting: (n: number) =>
       n === 1 ? "1 person on the wall" : `${n} people on the wall`,
     scroll: "Scroll",
   },
 
-  problem: {
-    heading: "You already know how this goes",
-    lines: [
-      "You open LinkedIn, there are two hundred new posts, and maybe six are for people with your experience.",
-      "You rewrite the same resume for the fourth time this week because this one says React and yours says frontend.",
-      "You send out twelve applications on a Sunday night and then never find out what happened to any of them.",
+  story: {
+    label: "Why this exists",
+    heading: "I built this because I was the one job hunting.",
+    body: [
+      "Final year, off campus, and the whole thing was manual. Open twenty career pages, read the same job description written five different ways, guess whether I stood a chance, then rewrite my resume for the fourth time that week.",
+      "The part that got me was how little of it was thinking. It was tab management. So I spent my evenings building the thing I wanted to exist, and then I used it to apply to the jobs it found.",
     ],
-    closer:
-      "None of that is hard. It is just slow, and it eats the hours you were going to spend actually building something.",
+    kicker: "It is open source because there is no reason it should not be.",
   },
 
   what: {
-    heading: "What it does",
+    label: "What it does",
+    heading: "Four things, done properly.",
     items: [
       {
         title: "Finds the jobs",
-        body: "Reads careers pages directly from ninety plus companies on Greenhouse, Lever, Ashby and SmartRecruiters. Search any company by name and it gets added. No feed, no promoted posts, no ghost listings from March.",
+        body: "Reads careers pages straight from ninety plus companies on Greenhouse, Lever, Ashby and SmartRecruiters. Search any company by name to add it.",
+        detail: "No feed, no promoted posts, no listings that closed in March.",
       },
       {
-        title: "Tells you why, not just how much",
-        body: "Every role gets a score out of a hundred, and you can open the score. Which required skills you have, which you do not, how close the match actually is. If a job got dropped, it says which rule dropped it.",
+        title: "Shows the arithmetic",
+        body: "Every role gets a score out of a hundred and you can open it. Which required skills you have, which you do not, and how close the match really is.",
+        detail: "Filtered a job out? It names the rule that did it.",
       },
       {
         title: "Writes a resume you can defend",
-        body: "It rewrites your real accomplishments for the specific job. Every bullet links back to the thing you actually did, and any number the model invents gets thrown out before you ever see it. Paste in your own Overleaf resume and it edits that instead of handing you a template.",
+        body: "It rewrites your real accomplishments for the specific job. Every bullet traces back to something you actually did, and invented numbers get thrown out before you see them.",
+        detail: "Paste your own Overleaf resume and it edits that, not a template.",
       },
       {
         title: "Keeps track",
-        body: "What you sent, where it went, what came back. Plus who to message at the company and a first line that is not generic.",
+        body: "What you sent, where it went, what came back. Plus who to message at the company and an opening line that is not generic.",
+        detail: "Nothing is scraped. You run the search yourself.",
       },
     ],
   },
 
   local: {
-    heading: "It runs on your laptop",
-    body: "There is no account and there is nothing to sign into. The language model runs on your machine through Ollama, the database is a container on your disk, and your resume never gets uploaded anywhere. The only requests it makes are to public job boards, which is the same thing that happens when you open a careers page yourself.",
-    aside:
-      "That is also why it is free. There is no server bill because there is no server.",
+    label: "Your laptop",
+    heading: "Your resume never leaves your machine.",
+    body: "No account, nothing to log into, no API key to buy. The model runs locally through Ollama and the database is a container on your own disk. The only requests it makes are to public job boards, which is what happens when you open a careers page yourself.",
+    points: [
+      { title: "Free", body: "There is no server bill, because there is no server." },
+      { title: "Private", body: "Your career history sits in a database only you can reach." },
+      { title: "Yours", body: "MIT licensed. Read it, change it, keep it." },
+    ],
   },
 
   install: {
-    heading: "Getting it running",
-    intro:
-      "Fifteen minutes, and most of that is a model download you can walk away from. You need Docker installed.",
+    label: "Getting it running",
+    heading: "Three commands.",
+    locked: "Add yourself to the wall and the setup steps open up.",
+    intro: "Fifteen minutes, and most of that is a download you can walk away from. You need Docker.",
     steps: [
       {
         title: "Clone it",
@@ -91,26 +100,25 @@ export const copy = {
       {
         title: "Start it",
         command: "docker compose --profile app up -d",
-        note: "Brings up Postgres, Ollama and the app.",
+        note: "Postgres, Ollama and the app, all in containers.",
       },
       {
         title: "Pull a model",
         command: "docker exec jobsearch-ollama ollama pull llama3.2:3b",
-        note: "About 2 GB, once. On 16 GB of RAM you can use llama3.1:8b instead and get better writing.",
+        note: "About 2 GB, once. With 16 GB of RAM use llama3.1:8b for better writing.",
       },
     ],
-    // Split so the port can be a real link without slicing the sentence apart
-    // at render time.
     outroBefore: "Then open",
-    outroAfter: "and fill in the four setup steps it shows you.",
+    outroAfter: "and work through the four setup steps it shows you.",
     port: "http://localhost:3000",
     portLabel: "localhost:3000",
   },
 
   join: {
-    heading: "Put yourself on the wall",
-    body: "Pick a name, where you are, and a face. That is the whole thing. No email, nothing gets sent to you, and there is nothing to log into later.",
-    why: "It is here so the next person who lands on this page can see somebody else is doing the same grind.",
+    label: "The wall",
+    heading: "Put yourself on the wall.",
+    body: "A name, where you are, and a face. No email, nothing gets sent to you, and there is nothing to log into later.",
+    why: "It is here so the next person landing on this page can see they are not the only one doing this.",
     nameLabel: "What should we call you",
     namePlaceholder: "first name is fine",
     countryLabel: "Where are you",
@@ -124,7 +132,7 @@ export const copy = {
     submit: "Join the wall",
     submitting: "Adding you",
     joined: "You are on the wall",
-    joinedBody: "Scroll down, you are the first one there.",
+    joinedBody: "Look up, you are in the crowd behind the headline. The setup steps are open now.",
     errors: {
       empty: "Needs a name, any name.",
       tooLong: "Twenty four characters or fewer.",
@@ -144,9 +152,9 @@ export const copy = {
   },
 
   footer: {
-    built: "Built by a student who was job hunting and got tired of doing this by hand.",
+    built: "Built by a student who was job hunting and got tired of doing it by hand.",
     repo: "Source on GitHub",
     licence: "MIT licensed",
-    avatars: "Avatars by DiceBear, Open Peeps style, CC0",
+    avatars: "Avatars by DiceBear, Open Peeps, CC0",
   },
 } as const;

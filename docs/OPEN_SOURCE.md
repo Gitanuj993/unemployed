@@ -121,7 +121,7 @@ job-search-assistant/
 
 ## The landing page
 
-One static page, deployable free to GitHub Pages. Built from the **existing UI's**
+Deployed to Vercel free tier with a Neon serverless Postgres database for the signup wall. Built from the **existing UI's**
 styling — same fonts, same restraint — so the page looks like the product rather
 than a marketing site bolted on.
 
@@ -151,8 +151,7 @@ Structure:
 
 4. **Three screenshots**: today's list, the "why" breakdown, a generated resume
    with source links.
-5. **Link to the repo.** No signup, no waitlist, no email capture — there's
-   nothing to sign up for, and asking would undercut the privacy claim.
+5. **Link to the repo.** The app itself runs locally with no signup. The landing page includes an optional "wall" where visitors leave a name, country, and gender to get an avatar, but there is no email capture, preserving the privacy claim.
 
 ---
 
@@ -166,7 +165,7 @@ Structure:
 | 4 | Region profiles; `companies.example.py` + regional seed lists | Switch region → filters and companies change; tests pass per region |
 | 5 | RAM detection + model recommendation; reuse native Ollama if present | 8 GB machine is steered to 3b; existing Ollama is detected |
 | 6 | README rewrite, PRIVACY.md, CONTRIBUTING.md, LICENSE, screenshots | A stranger can follow it start to finish |
-| 7 | Landing page with the interactive pipeline walkthrough | Deploys to GitHub Pages; walkthrough uses real demo data |
+| 7 | Landing page with the interactive pipeline walkthrough and signup wall | Deploys to Vercel + Neon; walkthrough uses real demo data |
 | 8 | CI: pytest + eval harness on push | Green badge; a seeded regression fails the build |
 | 9 | **Clean-machine test** | Wipe volumes, fresh clone, follow README exactly, time it |
 

@@ -1,9 +1,8 @@
 "use client";
 
-import { useState } from "react";
-
 import { AvatarImage } from "./avatar";
 import { SignupForm } from "./signup-form";
+import { useEveryone } from "./people-provider";
 import { countryName } from "@/lib/countries.ts";
 import { copy } from "@/lib/copy.ts";
 import type { SignupRow } from "@/lib/db";
@@ -15,13 +14,13 @@ import type { SignupRow } from "@/lib/db";
  * thirty second old cache.
  */
 export function Wall({
-  initial,
+  fromServer,
   initialSeed,
 }: {
-  initial: SignupRow[];
+  fromServer: SignupRow[];
   initialSeed: string;
 }) {
-  const [people, setPeople] = useState(initial);
+  const people = useEveryone(fromServer);
 
   return (
     <>
@@ -30,10 +29,7 @@ export function Wall({
           {copy.join.heading}
         </h2>
         <p className="text-muted-foreground mb-6 text-sm">{copy.join.body}</p>
-        <SignupForm
-          initialSeed={initialSeed}
-          onJoined={(row) => setPeople((prev) => [row, ...prev])}
-        />
+        <SignupForm initialSeed={initialSeed} />
         <p className="text-muted-foreground mt-3 text-xs">{copy.join.why}</p>
       </section>
 

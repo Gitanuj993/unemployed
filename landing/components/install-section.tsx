@@ -1,0 +1,96 @@
+"use client";
+
+import { CopyButton } from "./copy-button";
+import { usePeople } from "./people-provider";
+import { copy } from "@/lib/copy.ts";
+
+/**
+ * The setup steps, held back until you are on the wall.
+ *
+ * Not a hard gate, since the repository is public and the commands are in the
+ * README either way. It is a trade: the wall is worth more with people on it,
+ * and one name is a fair price for the thing you came here to install. The
+ * locked state says exactly what it wants rather than pretending the section
+ * is not there.
+ */
+export function InstallSection() {
+  const { joined } = usePeople();
+
+  return (
+    <section id="install" className="scroll-mt-24 border-t px-6 py-24 sm:py-32">
+      <div className="mx-auto w-full max-w-6xl">
+        <div className="grid gap-10 md:grid-cols-12 md:gap-14">
+          <div className="md:col-span-4">
+            <p className="text-muted-foreground font-mono text-[11px] tracking-[0.2em] uppercase">
+              {copy.install.label}
+            </p>
+            <h2 className="mt-5 font-serif text-3xl leading-tight sm:text-4xl">
+              {copy.install.heading}
+            </h2>
+            <p className="text-muted-foreground mt-5 text-base leading-relaxed">
+              {copy.install.intro}
+            </p>
+          </div>
+
+          <div className="md:col-span-7 md:col-start-6">
+            {joined ? <Steps /> : <Locked />}
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function Steps() {
+  return (
+    <>
+      <ol className="space-y-8">
+        {copy.install.steps.map((step, i) => (
+          <li key={step.title} className="space-y-3">
+            <div className="flex items-baseline gap-3">
+              <span className="text-muted-foreground/60 font-mono text-xs tabular-nums">
+                {String(i + 1).padStart(2, "0")}
+              </span>
+              <h3 className="text-lg font-medium">{step.title}</h3>
+            </div>
+            <CopyButton command={step.command} />
+            <p className="text-muted-foreground text-sm">{step.note}</p>
+          </li>
+        ))}
+      </ol>
+      <p className="mt-9 text-base">
+        {copy.install.outroBefore}{" "}
+        <a href={copy.install.port} className="font-mono underline underline-offset-4">
+          {copy.install.portLabel}
+        </a>{" "}
+        {copy.install.outroAfter}
+      </p>
+    </>
+  );
+}
+
+function Locked() {
+  return (
+    <div className="card flex flex-col items-start gap-5">
+      <div className="space-y-3">
+        {/* Three blurred bars standing in for the commands, so it is obvious
+            what is behind this rather than being a mystery. */}
+        {[80, 64, 72].map((width, i) => (
+          <div key={i} className="flex items-center gap-3">
+            <span className="text-muted-foreground/40 font-mono text-xs tabular-nums">
+              {String(i + 1).padStart(2, "0")}
+            </span>
+            <div
+              className="bg-muted h-8 rounded-md blur-[3px]"
+              style={{ width: `${width}%`, minWidth: "12rem" }}
+            />
+          </div>
+        ))}
+      </div>
+      <p className="text-base">{copy.install.locked}</p>
+      <a href="#wall" className="btn-solid">
+        {copy.join.submit}
+      </a>
+    </div>
+  );
+}
