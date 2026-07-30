@@ -32,3 +32,9 @@ backend/generated/
 
 # Machine-local Claude Code settings
 .claude/settings.local.json
+
+# Landing app
+landing/.next/
+landing/node_modules/
+landing/.env.local
+landing/.vercel/

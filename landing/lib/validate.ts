@@ -1,0 +1,84 @@
+/**
+ * Everything a stranger can type, checked before it reaches the database.
+ *
+ * Pure functions on purpose: this is the file worth testing, and none of it
+ * needs a request, a database or a network.
+ */
+import { COUNTRY_CODES } from "./countries.ts";
+import { GENDERS, type Gender } from "./gender-options.ts";
+
+export const MAX_NAME_LENGTH = 24;
+
+/**
+ * Two tiers, because one list cannot do both jobs.
+ *
+ * Slurs are matched anywhere in the name: there is no real name that contains
+ * one by accident, so the false positive risk is worth taking.
+ *
+ * Ordinary swearing is matched only as a whole word. Dickson, Cockburn and
+ * Sexton are real surnames, and a wall that tells someone their own name is
+ * unacceptable is worse than a wall with a rude word on it.
+ */
+const SLURS = ["nigger", "nigga", "faggot", "retard", "nazi", "hitler"];
+
+const SWEARS = [
+  "fuck", "shit", "cunt", "bitch", "bastard", "wanker", "slut", "whore",
+  "rape", "penis", "vagina", "dick", "cock", "boobs", "porn", "sex", "anal",
+];
+
+const LEET: Record<string, string> = {
+  "0": "o", "1": "i", "3": "e", "4": "a", "5": "s", "7": "t",
+  "@": "a", $: "s", "!": "i", "|": "i",
+};
+
+/** Undo the substitutions people reach for first, and drop everything else. */
+function flatten(text: string): string {
+  return text
+    .toLowerCase()
+    .replace(/[013457@$!|]/g, (c) => LEET[c] ?? c)
+    .replace(/[^a-z]/g, "");
+}
+
+function isProfane(name: string): boolean {
+  const flat = flatten(name);
+  if (SLURS.some((word) => flat.includes(word))) return true;
+
+  // Whole words only. "Dickson" is one token and is not "dick", but "F U C K"
+  // collapses to a single token once the spacing is removed, so check both.
+  const tokens = name.toLowerCase().split(/\s+/).map(flatten).filter(Boolean);
+  return SWEARS.some((word) => flat === word || tokens.includes(word));
+}
+
+export function cleanName(raw: unknown): string {
+  return String(raw ?? "")
+    .normalize("NFC")
+    // Control and format characters. This is what removes zero-width joiners and
+    // the right-to-left override that makes a name rearrange the page around it.
+    .replace(/[\p{Cc}\p{Cf}]/gu, "")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+export type NameProblem = "empty" | "tooLong" | "profane" | null;
+
+export function checkName(raw: unknown): { name: string; problem: NameProblem } {
+  const name = cleanName(raw);
+  if (name.length === 0) return { name, problem: "empty" };
+  // Count code points, not UTF-16 units, or one emoji spends four characters.
+  if ([...name].length > MAX_NAME_LENGTH) return { name, problem: "tooLong" };
+
+  if (isProfane(name)) return { name, problem: "profane" };
+  return { name, problem: null };
+}
+
+export function isValidCountry(code: unknown): code is string {
+  return typeof code === "string" && COUNTRY_CODES.has(code.toUpperCase());
+}
+
+export function asGenderStrict(value: unknown): Gender | null {
+  return GENDERS.includes(value as Gender) ? (value as Gender) : null;
+}
+
+export function isValidSeedInput(seed: unknown): seed is string {
+  return typeof seed === "string" && /^[a-z0-9-]{1,64}$/i.test(seed);
+}
