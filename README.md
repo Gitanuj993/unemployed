@@ -137,7 +137,8 @@ won't produce results until the model finishes.
 2. **Import** — upload your resume and any project/achievement documents. They're
    parsed into accomplishment "chunks" that you review and edit before saving.
    *This is the most important step: match and resume quality are bounded by how
-   rich your knowledge base is.*
+   rich your knowledge base is.* The first import is slower than the rest: it
+   downloads the embedding model (~130 MB, once, cached on disk after that).
 3. **Filters** — **your region**, role families, max years of experience, and
    preferred locations. Set the region first: it decides which jobs are even
    stored.
