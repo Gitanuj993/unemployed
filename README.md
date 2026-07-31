@@ -52,9 +52,15 @@ aimed at the skills the role wants that your experience can't yet prove.
 ## Setup
 
 **Prerequisites:** [Docker](https://docs.docker.com/get-docker/),
-[Ollama](https://ollama.com/download), [Python 3.12+](https://www.python.org/downloads/)
+[Ollama](https://ollama.com/download), [Python 3.12 or 3.13](https://www.python.org/downloads/)
 and [Node 20+](https://nodejs.org/). No `.env` file is needed — the defaults
 already describe this setup.
+
+Not "3.12 or newer": the pinned `pydantic-core`, `psycopg-binary` and
+`SQLAlchemy` publish no wheels past 3.13, so on 3.14 pip falls back to building
+them from source and needs a Rust toolchain and a C compiler to do it. Build
+the venv with a version in range — `py -3.12 -m venv .venv` on Windows,
+`python3.12 -m venv .venv` elsewhere — whatever bare `python` happens to be.
 
 Three terminals, once. After that it's two.
 
