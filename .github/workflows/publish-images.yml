@@ -61,6 +61,13 @@ jobs:
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
+          # Per-image cache scope: without it the three matrix legs would
+          # fight over one shared cache key and mostly miss. Unrelated to the
+          # installer fix below, but this is the "3 packages took a long time"
+          # complaint — first run after this still builds from scratch, every
+          # run after reuses layers.
+          cache-from: type=gha,scope=${{ matrix.name }}
+          cache-to: type=gha,mode=max,scope=${{ matrix.name }}
 
   installer:
     # Only makes sense once the images it points to actually exist.
@@ -73,12 +80,23 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Install ps2exe
-        # Chocolatey ships preinstalled on windows-latest and sidesteps the
-        # PowerShellGet/NuGet-provider bootstrap, which is flaky in CI
-        # ("No match was found for the specified search criteria for the
-        # provider 'NuGet'").
+        # Neither the PowerShellGet/NuGet-provider bootstrap nor the
+        # Chocolatey community feed reliably resolves this package in CI, so
+        # skip package managers entirely: pull the three module files
+        # straight from their source repo (github.com/MScholtes/PS2EXE) into
+        # a folder already on $env:PSModulePath, so Get-Module and
+        # Install-Module's fallback in build-exe.ps1 find it as normal.
         shell: pwsh
-        run: choco install ps2exe -y --no-progress
+        run: |
+          $ErrorActionPreference = "Stop"
+          $moduleDir = Join-Path (($env:PSModulePath -split ";")[0]) "ps2exe"
+          New-Item -ItemType Directory -Force -Path $moduleDir | Out-Null
+          $base = "https://raw.githubusercontent.com/MScholtes/PS2EXE/master/Module"
+          foreach ($file in @("ps2exe.psd1", "ps2exe.psm1", "ps2exe.ps1")) {
+            Invoke-WebRequest -Uri "$base/$file" -OutFile (Join-Path $moduleDir $file)
+          }
+          Import-Module ps2exe
+          Get-Command Invoke-ps2exe | Out-Null
 
       - name: Build install.exe
         shell: pwsh
