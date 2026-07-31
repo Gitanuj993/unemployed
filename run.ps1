@@ -88,15 +88,35 @@ Ok "Docker is ready"
 
 # --- 3. Postgres ------------------------------------------------------------
 Say "Starting Postgres"
-Push-Location $Root
-try {
-    docker compose up -d
-    if ($LASTEXITCODE -ne 0) {
-        Write-Host "`nCould not start Postgres." -ForegroundColor Red
-        Write-Host "  The usual cause is port 5432 already in use by another Postgres."
-        exit 1
-    }
-} finally { Pop-Location }
+# docker-compose.yml fixes container_name, which is global across the daemon
+# rather than scoped to the compose project - so a second clone of this repo in
+# another folder collides on the name. That container is the database this
+# clone wants anyway (same image, same credentials, same port), so adopt it
+# instead of failing. Only a genuinely broken state should stop us here.
+$running = (docker ps --filter "name=jobsearch-postgres" --format "{{.Names}}" 2>$null | Out-String).Trim()
+if ($running -match "jobsearch-postgres") {
+    Ok "Reusing the jobsearch-postgres container that is already running"
+} else {
+    Push-Location $Root
+    try {
+        $composeOut = docker compose up -d 2>&1 | Out-String
+        if ($LASTEXITCODE -ne 0) {
+            Write-Host $composeOut
+            Write-Host "`nCould not start Postgres." -ForegroundColor Red
+            if ($composeOut -match "already in use by container") {
+                Write-Host "  A stopped jobsearch-postgres container is in the way. Remove it:"
+                Write-Host "    docker rm -f jobsearch-postgres"
+                Write-Host "  Your data lives in a docker volume, not the container, so this is safe."
+            } elseif ($composeOut -match "port is already allocated|bind|5432") {
+                Write-Host "  Port 5432 is already in use - most likely a Postgres installed"
+                Write-Host "  directly on this machine. Stop it, then run this script again."
+            } else {
+                Write-Host "  See the docker output above."
+            }
+            exit 1
+        }
+    } finally { Pop-Location }
+}
 
 # Migrations fail with a confusing connection error if we race the container.
 $waited = 0
@@ -196,9 +216,30 @@ if (-not (Test-Path (Join-Path $Web "node_modules"))) {
 Ok "Frontend ready"
 
 # --- 7. Start ---------------------------------------------------------------
+Say "Starting the app"
+
+# Starting a second copy on a taken port produces two windows that die on
+# arrival, and the health check below would still pass against the *old* one -
+# which looks like success while running someone else's code. Refuse instead.
+$busy = @()
+foreach ($port in 8000, 3000) {
+    if (Get-NetTCPConnection -State Listen -LocalPort $port -ErrorAction SilentlyContinue) {
+        $busy += $port
+    }
+}
+if ($busy.Count -gt 0) {
+    Write-Host "`nPort $($busy -join ' and ') already in use." -ForegroundColor Red
+    Write-Host "  Another copy of this app is probably still running. Close its windows,"
+    Write-Host "  or free the ports with:"
+    Write-Host ""
+    Write-Host "    foreach (`$p in 3000,8000) { Get-NetTCPConnection -State Listen -LocalPort `$p -ErrorAction SilentlyContinue | ForEach-Object { Stop-Process -Id `$_.OwningProcess -Force } }"
+    Write-Host ""
+    Write-Host "  Then run this script again."
+    exit 1
+}
+
 # Separate windows, not background jobs: when something goes wrong later the
 # student needs to be able to see the log and Ctrl+C it.
-Say "Starting the app"
 Start-Process powershell -ArgumentList @(
     "-NoExit", "-Command",
     "Set-Location '$Backend'; & '$Venv' -m uvicorn app.main:app --reload --port 8000"

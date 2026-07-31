@@ -64,8 +64,31 @@ ok "Docker is ready"
 
 # --- 3. Postgres ------------------------------------------------------------
 say "Starting Postgres"
-(cd "$ROOT" && docker compose up -d) || die "Could not start Postgres.
-  The usual cause is port 5432 already in use by another Postgres."
+# docker-compose.yml fixes container_name, which is global across the daemon
+# rather than scoped to the compose project - so a second clone of this repo in
+# another folder collides on the name. That container is the database this
+# clone wants anyway (same image, same credentials, same port), so adopt it
+# instead of failing.
+if [ "$(docker ps --filter 'name=^/jobsearch-postgres$' --format '{{.Names}}' 2>/dev/null)" = "jobsearch-postgres" ]; then
+  ok "Reusing the jobsearch-postgres container that is already running"
+else
+  if ! compose_out=$(cd "$ROOT" && docker compose up -d 2>&1); then
+    printf "%s\n" "$compose_out"
+    case "$compose_out" in
+      *"already in use by container"*)
+        die "Could not start Postgres.
+  A stopped jobsearch-postgres container is in the way. Remove it:
+    docker rm -f jobsearch-postgres
+  Your data lives in a docker volume, not the container, so this is safe." ;;
+      *"port is already allocated"*|*5432*)
+        die "Could not start Postgres.
+  Port 5432 is already in use - most likely a Postgres installed directly on
+  this machine. Stop it, then run this script again." ;;
+      *)
+        die "Could not start Postgres. See the docker output above." ;;
+    esac
+  fi
+fi
 
 # Migrations fail with a confusing connection error if we race the container.
 waited=0
@@ -118,6 +141,19 @@ ok "Frontend ready"
 
 # --- 7. Start ---------------------------------------------------------------
 say "Starting the app"
+
+# Starting a second copy on a taken port dies on arrival, and the health check
+# below would still pass against the *old* one - success that is really someone
+# else's process. Refuse instead.
+for port in 8000 3000; do
+  if curl -sf -m 2 "http://localhost:$port" >/dev/null 2>&1 \
+     || curl -sf -m 2 "http://localhost:$port/health" >/dev/null 2>&1; then
+    die "Port $port is already in use.
+  Another copy of this app is probably still running. Stop it, then run this
+  script again."
+  fi
+done
+
 (cd "$BACKEND" && "$VENV" -m uvicorn app.main:app --reload --port 8000) &
 BACK_PID=$!
 (cd "$WEB" && npm run dev) &
