@@ -7,16 +7,16 @@ LLM. Tests 6–11 (document import) need `llama3.2:3b` downloaded.
 
 ## 0. Start everything (3 terminals)
 
-**Terminal A — infra (Docker):**
+**Terminal A — infra (Docker + Ollama):**
 ```bash
-docker compose up -d postgres ollama
+docker compose up -d
 ```
 Confirm the model is ready:
 ```bash
-docker exec jobsearch-ollama ollama list
+ollama list
 ```
-✅ Expect `llama3.2:3b` in the list. If it's missing, it's still downloading —
-you can still do Tests 1–5 and 12 meanwhile.
+✅ Expect `llama3.2:3b` in the list. If it's missing, run `ollama pull llama3.2:3b` —
+you can still do Tests 1–5 and 12 while it downloads.
 
 **Terminal B — backend (:8000):**
 ```bash
@@ -447,8 +447,8 @@ docker compose --profile app up -d
 - ✅ Starts postgres, ollama, api (migrations run automatically), worker (daily
   ingest + score) and web.
 - ✅ http://localhost:3000 and http://localhost:8000/health both respond.
-- For day-to-day development keep using `docker compose up -d` (infra only) plus
-  the host backend/frontend for hot reload.
+- For day-to-day development keep using `docker compose up -d` (Postgres only)
+  plus native Ollama and the host backend/frontend for hot reload.
 
 ---
 
@@ -499,12 +499,13 @@ docker exec jobsearch-postgres psql -U jobsearch -d jobsearch -c "TRUNCATE kb_ch
 ```
 
 ## Troubleshooting
-- **Import does nothing / errors about model:** run `docker exec jobsearch-ollama ollama list`
-  and wait until `llama3.2:3b` appears.
-- **`404 ... /api/chat` or "model not found":** our Ollama runs on host port **11435**,
-  not 11434 — a native Windows Ollama install owns 11434 and auto-starts, which would
-  otherwise shadow the container. Check `docker ps` shows `0.0.0.0:11435->11434/tcp`.
-- **`Internal Server Error` on /health:** Postgres container stopped. `docker compose up -d postgres`.
+- **Import does nothing / errors about model:** run `ollama list` and check that
+  `llama3.2:3b` is there; `ollama pull llama3.2:3b` if not.
+- **`404 ... /api/chat` or "model not found":** the backend is talking to the wrong
+  Ollama. Development uses the **native** install on `11434` (`curl http://localhost:11434/api/tags`).
+  The `--profile app` container publishes `11435` instead, deliberately, so the two
+  never shadow each other — if you're on that path, `OLLAMA_URL` has to say 11435.
+- **`Internal Server Error` on /health:** Postgres container stopped. `docker compose up -d`.
 - **A page intermittently 500s** (`Unexpected end of JSON input`): stop the frontend,
   delete `web/.next`, run `npm run dev` again (corrupted dev cache).
 - **First KB action is slow:** the embedding model (~130 MB) loads once, then it's cached.

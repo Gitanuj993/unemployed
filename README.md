@@ -51,34 +51,34 @@ aimed at the skills the role wants that your experience can't yet prove.
 
 ## Setup
 
-**Prerequisites:** [Docker](https://docs.docker.com/get-docker/), plus
-[Python 3.12+](https://www.python.org/downloads/) and
-[Node 20+](https://nodejs.org/) if you want hot-reload development.
+**Prerequisites:** [Docker](https://docs.docker.com/get-docker/),
+[Ollama](https://ollama.com/download), [Python 3.12+](https://www.python.org/downloads/)
+and [Node 20+](https://nodejs.org/). No `.env` file is needed — the defaults
+already describe this setup.
 
-### Option A — everything in Docker
+Three terminals, once. After that it's two.
+
+### Terminal 1 — infrastructure *(run once, then close it)*
 
 ```bash
-docker compose --profile app up -d
+git clone https://github.com/Maan-Teckwani/unemployed.git
 ```
-The `init` service pulls the model (~2 GB, once) in the background — watch its
-progress with `docker logs -f jobsearch-init`. The app itself doesn't wait on
-it, so open **http://localhost:3000** right away; scoring just won't produce
-results until the model finishes.
-
-### Option B — development (hot reload)
-
-Infra in Docker, app on the host. Start the database and LLM:
 ```bash
-docker compose up -d
+cd unemployed && docker compose up -d
 ```
-This also starts `init`, which pulls the model in the background — check
-progress with `docker logs -f jobsearch-init`.
-
-**Backend**, once:
 ```bash
-cd backend && python -m venv .venv
+ollama pull llama3.2:3b
 ```
-Activate it — this is the only command that differs by OS:
+That starts Postgres (which restarts itself on every boot, so this is genuinely
+one-time) and downloads the model, ~2 GB. Ollama runs as a background service —
+it needs no terminal of its own.
+
+### Terminal 2 — backend
+
+```bash
+cd unemployed/backend && python -m venv .venv
+```
+Activate it — the only command that differs by OS:
 
 | | |
 |---|---|
@@ -93,13 +93,41 @@ pip install -r requirements.txt && alembic upgrade head
 ```bash
 uvicorn app.main:app --reload --port 8000
 ```
+The first `pip install` pulls PyTorch and takes a few minutes; later runs are
+instant. Wait for `Application startup complete.`
 
-**Frontend**, in a second terminal:
+### Terminal 3 — frontend
+
 ```bash
-cd web && npm install && npm run dev
+cd unemployed/web && npm install && npm run dev
 ```
 
-> Every `python -m app...` command below assumes the venv is activated.
+Open **http://localhost:3000**.
+
+### Every day after
+
+Terminal 1 is done with. You need two, and neither installs anything:
+
+| | |
+|---|---|
+| Backend | `cd unemployed/backend` → activate the venv → `uvicorn app.main:app --reload --port 8000` |
+| Frontend | `cd unemployed/web` → `npm run dev` |
+
+Postgres comes back on its own. If Docker Desktop was closed, start it and run
+`docker compose up -d` again — it's a no-op when the container is already up.
+
+> Every `python -m app...` command below assumes terminal 2's venv is activated.
+
+### Alternative — everything in Docker
+
+No host Python, Node or Ollama; hot reload is the trade:
+```bash
+docker compose --profile app up -d
+```
+This adds a containerised Ollama on port **11435** and an `init` service that
+pulls the model in the background — watch it with `docker logs -f jobsearch-init`.
+Nothing waits on it, so open **http://localhost:3000** right away; scoring just
+won't produce results until the model finishes.
 
 ---
 
@@ -138,16 +166,18 @@ In the Docker profile, steps 5–6 run automatically once a day.
 Any Ollama model works. Bigger models write better resume bullets but are slower:
 
 ```bash
-docker exec jobsearch-ollama ollama pull llama3.1:8b
+ollama pull llama3.1:8b
 ```
-Then set `OLLAMA_MODEL=llama3.1:8b` in `.env` and restart the backend.
-`llama3.2:3b` is the default because it runs comfortably on 8 GB of RAM; with
-16 GB or more, `llama3.1:8b` writes noticeably better resume bullets.
+Then copy `.env.example` to `.env` at the repo root, set
+`OLLAMA_MODEL=llama3.1:8b`, and restart the backend. `llama3.2:3b` is the
+default because it runs comfortably on 8 GB of RAM; with 16 GB or more,
+`llama3.1:8b` writes noticeably better resume bullets. Whatever you set has to
+show up in `ollama list`.
 
-**Already have Ollama installed natively?** It listens on `11434`; the bundled
-container deliberately uses `11435` so the two never collide. To use your own
-instead, set `OLLAMA_URL=http://localhost:11434` in `.env` and skip the
-`ollama` container.
+On the all-in-Docker path the model lives in the container instead, so pull it
+there — `docker exec jobsearch-ollama ollama pull llama3.1:8b`. That container
+publishes `11435` precisely so it can't collide with a native install on
+`11434`.
 
 ---
 

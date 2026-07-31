@@ -1,11 +1,14 @@
-# The whole application: `docker compose up -d` runs everything.
+# Two ways to run this, and the profile decides which:
 #
-# postgres and ollama are always needed. The api, web and worker services are in
-# the `app` profile, so day-to-day development can start just the infra and run
-# the backend/frontend on the host for fast hot-reload:
+#   docker compose up -d                  # Postgres only — development
+#   docker compose --profile app up -d    # the full stack, nothing on the host
 #
-#   docker compose up -d                      # infra only (development)
-#   docker compose --profile app up -d        # the full stack
+# Development runs the backend and frontend on the host for hot reload, against
+# a natively installed Ollama (`ollama pull llama3.2:3b`). So the bare `up -d`
+# starts *only* Postgres — pulling a second, containerised copy of the same 2 GB
+# model would be pure waste. `ollama`, `init`, `api`, `web` and `worker` are all
+# in the `app` profile, which is the self-contained path that needs no host
+# Python, Node or Ollama at all.
 #
 services:
   postgres:
@@ -28,7 +31,9 @@ services:
       retries: 10
 
   ollama:
-    # Local LLM runtime. We pull models into it after it starts (see README).
+    profiles: ["app"]
+    # Local LLM runtime for the full-stack path. Development uses a native
+    # Ollama install on the host instead, so this stays off by default.
     image: ollama/ollama:latest
     container_name: jobsearch-ollama
     restart: unless-stopped
@@ -40,6 +45,7 @@ services:
       - ollamadata:/root/.ollama
 
   init:
+    profiles: ["app"]
     # Pulls the Ollama model with progress and exits. Nothing blocks on it —
     # api/web start immediately and the model finishes downloading in parallel.
     build: ./backend/init
