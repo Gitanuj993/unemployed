@@ -1,15 +1,14 @@
-# The whole application: `docker compose up -d` runs everything.
+# The stack an end user's machine actually runs, shipped alongside the
+# Windows installer. Same services as docker-compose.yml, but every app image
+# is pulled from GHCR (see .github/workflows/publish-images.yml) instead of
+# built locally, and there's no dev/infra split: an end user always wants the
+# full stack running.
 #
-# postgres and ollama are always needed. The api, web and worker services are in
-# the `app` profile, so day-to-day development can start just the infra and run
-# the backend/frontend on the host for fast hot-reload:
-#
-#   docker compose up -d                      # infra only (development)
-#   docker compose --profile app up -d        # the full stack
+#   docker compose -f docker-compose.release.yml pull
+#   docker compose -f docker-compose.release.yml up -d
 #
 services:
   postgres:
-    # pgvector/pgvector ships Postgres with the pgvector extension preinstalled.
     image: pgvector/pgvector:pg16
     container_name: jobsearch-postgres
     restart: unless-stopped
@@ -28,21 +27,17 @@ services:
       retries: 10
 
   ollama:
-    # Local LLM runtime. We pull models into it after it starts (see README).
     image: ollama/ollama:latest
     container_name: jobsearch-ollama
     restart: unless-stopped
     ports:
-      # Host port 11435 on purpose: a native Windows/macOS Ollama install owns
-      # 11434 and auto-starts, which would silently shadow this container.
       - "11435:11434"
     volumes:
       - ollamadata:/root/.ollama
 
   init:
-    # Pulls the Ollama model with progress and exits. Nothing blocks on it —
-    # api/web start immediately and the model finishes downloading in parallel.
-    build: ./backend/init
+    # Pulls the model with progress and exits. Nothing else waits on it.
+    image: ${IMAGE_REGISTRY:-ghcr.io/maan-teckwani}/unemployed-init:${IMAGE_TAG:-latest}
     container_name: jobsearch-init
     restart: "no"
     depends_on:
@@ -52,16 +47,13 @@ services:
       OLLAMA_MODEL: ${OLLAMA_MODEL:-llama3.2:3b}
 
   api:
-    profiles: ["app"]
-    build: ./backend
+    image: ${IMAGE_REGISTRY:-ghcr.io/maan-teckwani}/unemployed-api:${IMAGE_TAG:-latest}
     container_name: jobsearch-api
     restart: unless-stopped
     depends_on:
       postgres:
         condition: service_healthy
     environment:
-      # Inside the compose network, services reach each other by name — and
-      # ollama listens on its own 11434 here, not the 11435 host mapping.
       DATABASE_URL: postgresql+psycopg://jobsearch:jobsearch@postgres:5432/jobsearch
       OLLAMA_URL: http://ollama:11434
       OLLAMA_MODEL: ${OLLAMA_MODEL:-llama3.2:3b}
@@ -74,8 +66,7 @@ services:
              uvicorn app.main:app --host 0.0.0.0 --port 8000"
 
   worker:
-    profiles: ["app"]
-    build: ./backend
+    image: ${IMAGE_REGISTRY:-ghcr.io/maan-teckwani}/unemployed-api:${IMAGE_TAG:-latest}
     container_name: jobsearch-worker
     restart: unless-stopped
     depends_on:
@@ -85,12 +76,10 @@ services:
       DATABASE_URL: postgresql+psycopg://jobsearch:jobsearch@postgres:5432/jobsearch
       OLLAMA_URL: http://ollama:11434
       OLLAMA_MODEL: ${OLLAMA_MODEL:-llama3.2:3b}
-    # Ingest + score once a day. The API applies migrations, so the worker waits.
     command: python -m app.worker.scheduler --daily
 
   web:
-    profiles: ["app"]
-    build: ./web
+    image: ${IMAGE_REGISTRY:-ghcr.io/maan-teckwani}/unemployed-web:${IMAGE_TAG:-latest}
     container_name: jobsearch-web
     restart: unless-stopped
     depends_on:

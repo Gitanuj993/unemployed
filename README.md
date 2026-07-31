@@ -60,11 +60,10 @@ aimed at the skills the role wants that your experience can't yet prove.
 ```bash
 docker compose --profile app up -d
 ```
-Then pull a model (~2 GB, once):
-```bash
-docker exec jobsearch-ollama ollama pull llama3.2:3b
-```
-Open **http://localhost:3000**.
+The `init` service pulls the model (~2 GB, once) in the background — watch its
+progress with `docker logs -f jobsearch-init`. The app itself doesn't wait on
+it, so open **http://localhost:3000** right away; scoring just won't produce
+results until the model finishes.
 
 ### Option B — development (hot reload)
 
@@ -72,9 +71,8 @@ Infra in Docker, app on the host. Start the database and LLM:
 ```bash
 docker compose up -d
 ```
-```bash
-docker exec jobsearch-ollama ollama pull llama3.2:3b
-```
+This also starts `init`, which pulls the model in the background — check
+progress with `docker logs -f jobsearch-init`.
 
 **Backend**, once:
 ```bash

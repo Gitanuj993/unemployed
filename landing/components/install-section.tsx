@@ -35,6 +35,11 @@ export function InstallSection() {
 
           <div className="md:col-span-7 md:col-start-6">
             {joined ? <Steps /> : <Locked />}
+            <p className="text-muted-foreground mt-8 text-sm">
+              <a href="/experiences" className="underline underline-offset-4 hover:text-foreground">
+                {copy.experiences.label}
+              </a>
+            </p>
           </div>
         </div>
       </div>
@@ -43,7 +48,7 @@ export function InstallSection() {
 }
 
 function Steps() {
-  const [activeTab, setActiveTab] = useState<"docker" | "native">("docker");
+  const [activeTab, setActiveTab] = useState<"docker" | "native" | "windows">("docker");
 
   return (
     <div>
@@ -57,6 +62,16 @@ function Steps() {
           onClick={() => setActiveTab("docker")}
         >
           With Docker (Recommended)
+        </button>
+        <button
+          className={`pb-3 text-sm font-medium transition-colors ${
+            activeTab === "windows"
+              ? "border-b-2 border-foreground text-foreground"
+              : "text-muted-foreground hover:text-foreground"
+          }`}
+          onClick={() => setActiveTab("windows")}
+        >
+          {copy.install.windows.tab}
         </button>
         <button
           className={`pb-3 text-sm font-medium transition-colors ${
@@ -93,6 +108,19 @@ function Steps() {
             </a>{" "}
             {copy.install.outroAfter}
           </p>
+        </div>
+      )}
+
+      {activeTab === "windows" && (
+        <div className="animate-in fade-in slide-in-from-bottom-2 duration-500">
+          <p className="text-base leading-relaxed">{copy.install.windows.body}</p>
+          <a
+            href={copy.install.windows.href}
+            className="btn-solid mt-6 inline-flex"
+          >
+            {copy.install.windows.cta}
+          </a>
+          <p className="text-muted-foreground mt-4 text-xs">{copy.install.windows.note}</p>
         </div>
       )}
 

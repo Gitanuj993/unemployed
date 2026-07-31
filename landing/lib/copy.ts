@@ -18,10 +18,11 @@ export const copy = {
 
   nav: {
     links: [
-      { href: "#story", label: "Why" },
-      { href: "#what", label: "What it does" },
-      { href: "#local", label: "Your laptop" },
-      { href: "#wall", label: "The wall" },
+      { href: "/#story", label: "Why" },
+      { href: "/#what", label: "What it does" },
+      { href: "/#local", label: "Your laptop" },
+      { href: "/#wall", label: "The wall" },
+      { href: "/experiences", label: "Interview experiences" },
     ],
     cta: "Join the wall",
   },
@@ -112,6 +113,13 @@ export const copy = {
     outroAfter: "and work through the four setup steps it shows you.",
     port: "http://localhost:3000",
     portLabel: "localhost:3000",
+    windows: {
+      tab: "Windows, no command line",
+      body: "One download. It checks for Docker, installs it if you don't have it, pulls everything, and opens the app when it's ready.",
+      cta: "Download install.exe",
+      href: "https://github.com/Maan-Teckwani/unemployed/releases/latest/download/install.exe",
+      note: "Windows will warn you it's from an unrecognized publisher. That's expected for a project run by one person with no code signing budget. Click 'More info', then 'Run anyway'.",
+    },
     noDocker: {
       heading: "No Docker?",
       steps: [
@@ -169,6 +177,67 @@ export const copy = {
     caption: (n: number) =>
       n === 1 ? "1 person is running this" : `${n} people are running this`,
     offline: "Cannot reach the wall right now.",
+  },
+
+  experiences: {
+    label: "Interview experiences",
+    heading: "What actually got asked.",
+    body: "Structured reports from people on the wall. Company, role, and a round by round breakdown of what happened.",
+    filterLabel: "Filter by company",
+    filterPlaceholder: "Type a company name",
+    empty: "Nobody has posted one yet. You can be first.",
+    noMatches: (company: string) => `Nobody has posted about ${company} yet.`,
+    postCta: "Share your experience",
+    locked: "Join the wall to share or read the full detail.",
+    resultLabels: {
+      offer: "Offer",
+      rejected: "Rejected",
+      withdrawn: "Withdrew",
+      pending: "In progress",
+    },
+    roundTypeLabels: {
+      oa: "Online assessment",
+      technical: "Technical",
+      system_design: "System design",
+      hr: "HR",
+      managerial: "Managerial",
+      group_discussion: "Group discussion",
+      other: "Other",
+    },
+    outcomeLabels: {
+      cleared: "Cleared",
+      rejected: "Rejected",
+      pending: "Pending",
+    },
+    flag: "Report",
+    flagged: "Reported",
+    form: {
+      companyLabel: "Company",
+      companyPlaceholder: "e.g. Freshworks",
+      roleLabel: "Role",
+      rolePlaceholder: "e.g. SDE 1",
+      resultLabel: "Result",
+      summaryLabel: "Summary",
+      summaryPlaceholder: "How the process went overall",
+      roundsLabel: "Rounds",
+      roundTypeLabel: "Type",
+      roundDescriptionLabel: "What happened",
+      roundOutcomeLabel: "Outcome",
+      addRound: "Add another round",
+      removeRound: "Remove",
+      submit: "Post",
+      submitting: "Posting",
+      posted: "Posted. Thanks for sharing.",
+      errors: {
+        empty: "This field can't be empty.",
+        tooLong: "That's too long.",
+        profane: "Pick different words.",
+        rounds: "Fill in every round properly.",
+        mustJoinWall: "Join the wall first, then come back to post.",
+        rateLimited: "That's a few too many. Try again later.",
+        generic: "That did not go through. Try again in a moment.",
+      },
+    },
   },
 
   footer: {

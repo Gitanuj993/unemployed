@@ -38,3 +38,6 @@ landing/.next/
 landing/node_modules/
 landing/.env.local
 landing/.vercel/
+
+# Installer build output (built by installer/build-exe.ps1 / the release workflow)
+installer/dist/

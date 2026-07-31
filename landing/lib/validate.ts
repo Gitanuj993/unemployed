@@ -82,3 +82,47 @@ export function asGenderStrict(value: unknown): Gender | null {
 export function isValidSeedInput(seed: unknown): seed is string {
   return typeof seed === "string" && /^[a-z0-9-]{1,64}$/i.test(seed);
 }
+
+export const RESULTS = ["offer", "rejected", "withdrawn", "pending"] as const;
+export type Result = (typeof RESULTS)[number];
+
+export const ROUND_TYPES = [
+  "oa", "technical", "system_design", "hr", "managerial", "group_discussion", "other",
+] as const;
+export type RoundType = (typeof ROUND_TYPES)[number];
+
+export const ROUND_OUTCOMES = ["cleared", "rejected", "pending"] as const;
+export type RoundOutcome = (typeof ROUND_OUTCOMES)[number];
+
+export type TextProblem = "empty" | "tooLong" | "profane" | null;
+
+/** Same cleaning + profanity checks as a name, for any other free-text field. */
+export function checkText(raw: unknown, maxLen: number): { text: string; problem: TextProblem } {
+  const text = cleanName(raw);
+  if (text.length === 0) return { text, problem: "empty" };
+  if ([...text].length > maxLen) return { text, problem: "tooLong" };
+  if (isProfane(text)) return { text, problem: "profane" };
+  return { text, problem: null };
+}
+
+export function checkCompany(raw: unknown) {
+  const { text, problem } = checkText(raw, 80);
+  return { company: text, problem };
+}
+
+export function checkRole(raw: unknown) {
+  const { text, problem } = checkText(raw, 80);
+  return { role: text, problem };
+}
+
+export function isValidResult(value: unknown): value is Result {
+  return RESULTS.includes(value as Result);
+}
+
+export function isValidRoundType(value: unknown): value is RoundType {
+  return ROUND_TYPES.includes(value as RoundType);
+}
+
+export function isValidRoundOutcome(value: unknown): value is RoundOutcome {
+  return ROUND_OUTCOMES.includes(value as RoundOutcome);
+}

@@ -1,31 +1,11 @@
-import { createHash } from "node:crypto";
-
 import { db, recentSignups, type SignupRow } from "@/lib/db";
 import { asGenderStrict, checkName, isValidCountry, isValidSeedInput } from "@/lib/validate";
+import { CACHE, CORS, corsOptions } from "@/lib/cors";
+import { ipHash, isUniqueViolation } from "@/lib/ip";
 
 // Never prerender. The read is request-time by nature, and if `cacheComponents`
 // is ever switched on, a board frozen at build time is a silent bug.
 export const dynamic = "force-dynamic";
-
-/**
- * Open to any origin on purpose: the local app reads this board from
- * localhost:3000, and a list of first names is not data worth protecting.
- * No credentials are involved, which is required anyway since a wildcard origin
- * and credentials cannot be combined.
- */
-const CORS = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
-  "Access-Control-Allow-Headers": "Content-Type",
-  "Access-Control-Max-Age": "86400",
-};
-
-// Browsers always get fresh data; the edge absorbs bursts. Thirty seconds is
-// invisible because whoever just joined sees their own row optimistically.
-const CACHE = {
-  "Cache-Control": "no-store, max-age=0",
-  "CDN-Cache-Control": "public, s-maxage=30",
-};
 
 const MAX_PER_IP = 3;
 const WINDOW_MINUTES = 10;
@@ -33,7 +13,7 @@ const WINDOW_MINUTES = 10;
 export async function OPTIONS() {
   // Next only auto-answers OPTIONS with an Allow header, which does not satisfy
   // a CORS preflight.
-  return new Response(null, { status: 204, headers: CORS });
+  return corsOptions();
 }
 
 export async function GET(request: Request) {
@@ -109,19 +89,6 @@ export async function POST(request: Request) {
 
 function fail(error: string, status: number, field?: string) {
   return Response.json({ error, field }, { status, headers: CORS });
-}
-
-/** Hashed, never stored raw. On Vercel the client is the first entry. */
-function ipHash(request: Request): string {
-  const forwarded = request.headers.get("x-forwarded-for");
-  const ip = forwarded?.split(",")[0]?.trim() || "local";
-  return createHash("sha256")
-    .update(ip + (process.env.SIGNUP_IP_SALT ?? "unsalted-dev"))
-    .digest("hex");
-}
-
-function isUniqueViolation(error: unknown): boolean {
-  return typeof error === "object" && error !== null && "code" in error && error.code === "23505";
 }
 
 async function existingFor(clientId: string): Promise<SignupRow | null> {
