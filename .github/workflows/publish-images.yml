@@ -73,10 +73,12 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Install ps2exe
+        # Chocolatey ships preinstalled on windows-latest and sidesteps the
+        # PowerShellGet/NuGet-provider bootstrap, which is flaky in CI
+        # ("No match was found for the specified search criteria for the
+        # provider 'NuGet'").
         shell: pwsh
-        run: |
-          Install-PackageProvider -Name NuGet -MinimumVersion 2.8.5.201 -Force -Scope CurrentUser
-          Install-Module ps2exe -Scope CurrentUser -Force
+        run: choco install ps2exe -y --no-progress
 
       - name: Build install.exe
         shell: pwsh
