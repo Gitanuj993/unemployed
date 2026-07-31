@@ -51,80 +51,65 @@ aimed at the skills the role wants that your experience can't yet prove.
 
 ## Setup
 
-**Prerequisites:** [Docker](https://docs.docker.com/get-docker/),
-[Ollama](https://ollama.com/download), [Python 3.12 or 3.13](https://www.python.org/downloads/)
-and [Node 20+](https://nodejs.org/). No `.env` file is needed — the defaults
-already describe this setup.
-
-Not "3.12 or newer": the pinned `pydantic-core`, `psycopg-binary` and
-`SQLAlchemy` publish no wheels past 3.13, so on 3.14 pip falls back to building
-them from source and needs a Rust toolchain and a C compiler to do it. Build
-the venv with a version in range — `py -3.12 -m venv .venv` on Windows,
-`python3.12 -m venv .venv` elsewhere — whatever bare `python` happens to be.
-
-Three terminals, once. After that it's two.
-
-### Terminal 1 — infrastructure *(run once, then close it)*
+**You need** [Git](https://git-scm.com/downloads),
+[Python 3.10+](https://www.python.org/downloads/), [Node 20+](https://nodejs.org/),
+[Docker](https://docs.docker.com/get-docker/) and [Ollama](https://ollama.com/download).
+Missing one? The script below names it and gives you the command to install it.
 
 ```bash
 git clone https://github.com/Maan-Teckwani/unemployed.git
 ```
 ```bash
-cd unemployed && docker compose up -d
+cd unemployed
 ```
+
+**Windows**
 ```bash
-ollama pull llama3.2:3b
+powershell -ExecutionPolicy Bypass -File .\run.ps1
 ```
-That starts Postgres (which restarts itself on every boot, so this is genuinely
-one-time) and downloads the model, ~2 GB. Ollama runs as a background service —
-it needs no terminal of its own.
 
-### Terminal 2 — backend
-
+**macOS / Linux**
 ```bash
-cd unemployed/backend && python -m venv .venv
+./run.sh
 ```
-Activate it — the only command that differs by OS:
 
-| | |
-|---|---|
-| macOS / Linux | `source .venv/bin/activate` |
-| Windows (PowerShell) | `.venv\Scripts\Activate.ps1` |
-| Windows (Git Bash) | `source .venv/Scripts/activate` |
+That's the whole setup. The script starts Postgres, downloads the model, builds
+the virtual environment, installs both dependency trees, applies migrations,
+launches the backend and frontend and opens the app.
 
-Everything after this is identical on every OS:
-```bash
-pip install -r requirements.txt && alembic upgrade head
-```
-```bash
-uvicorn app.main:app --reload --port 8000
-```
-The first `pip install` pulls PyTorch and takes a few minutes; later runs are
-instant. Wait for `Application startup complete.`
-
-### Terminal 3 — frontend
-
-```bash
-cd unemployed/web && npm install && npm run dev
-```
+First run takes about ten minutes — PyTorch and a 2 GB model. **Run the exact
+same command every time after**: every step checks before it acts, so later
+runs skip straight to starting the app. There is nothing else to remember, and
+no `.env` file to write.
 
 Open **http://localhost:3000**.
 
-### Every day after
+<details>
+<summary>Running it by hand instead</summary>
 
-Terminal 1 is done with. You need two, and neither installs anything:
+The script is only doing this, and nothing is stopping you doing it yourself.
+Terminal 1, once:
+```bash
+docker compose up -d && ollama pull llama3.2:3b
+```
+Terminal 2 — backend (`python3` and `.venv/bin/python` on macOS/Linux):
+```bash
+cd backend && python -m venv .venv && .venv\Scripts\python.exe -m pip install -r requirements.txt
+```
+```bash
+.venv\Scripts\python.exe -m alembic upgrade head
+```
+```bash
+.venv\Scripts\python.exe -m uvicorn app.main:app --reload --port 8000
+```
+Terminal 3 — frontend:
+```bash
+cd web && npm install && npm run dev
+```
+</details>
 
-| | |
-|---|---|
-| Backend | `cd unemployed/backend` → activate the venv → `uvicorn app.main:app --reload --port 8000` |
-| Frontend | `cd unemployed/web` → `npm run dev` |
-
-Postgres comes back on its own. If Docker Desktop was closed, start it and run
-`docker compose up -d` again — it's a no-op when the container is already up.
-
-> Every `python -m app...` command below assumes terminal 2's venv is activated.
-
-### Alternative — everything in Docker
+<details>
+<summary>Everything in Docker instead</summary>
 
 No host Python, Node or Ollama; hot reload is the trade:
 ```bash
@@ -134,6 +119,10 @@ This adds a containerised Ollama on port **11435** and an `init` service that
 pulls the model in the background — watch it with `docker logs -f jobsearch-init`.
 Nothing waits on it, so open **http://localhost:3000** right away; scoring just
 won't produce results until the model finishes.
+</details>
+
+> Every `python -m app...` command below assumes `backend/.venv` is activated,
+> or is run as `.venv\Scripts\python.exe -m app...`.
 
 ---
 
