@@ -35,10 +35,14 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(title="AI Career Assistant", version="0.1.0", lifespan=lifespan)
 
-# The Next.js dev server runs on :3000 and calls this API on :8000.
+# The Next.js dev server runs on :3000 and calls this API on :8000. Both
+# hostnames are allowed because "localhost" and "127.0.0.1" are different
+# origins to a browser even though they reach the same machine - whichever
+# one you type into the address bar has to be in this list, or the
+# CORSMiddleware itself returns 400 on every request before it reaches a route.
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000"],
+    allow_origins=["http://localhost:3000", "http://127.0.0.1:3000"],
     allow_methods=["*"],
     allow_headers=["*"],
 )
