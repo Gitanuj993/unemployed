@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Inter, Outfit, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
 import { copy } from "@/lib/copy";
+import { Analytics } from "@vercel/analytics/next"
 
 /**
  * Modern clean fonts. Outfit for headings, Inter for body text.
@@ -34,7 +35,10 @@ export default function RootLayout({
       lang="en"
       className={`${display.variable} ${body.variable} ${code.variable} h-full antialiased`}
     >
-      <body className="min-h-full bg-background text-foreground">{children}</body>
+      <body className="min-h-full bg-background text-foreground">
+        {children}
+        <Analytics />
+      </body>
     </html>
   );
 }
