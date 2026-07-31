@@ -35,11 +35,13 @@ function Test-Admin {
 }
 
 function Assert-Elevated {
+    # The compiled exe already requests admin via its manifest (-requireAdmin
+    # in build-exe.ps1), so Windows elevates before any of this code runs.
+    # There is no reliable self-relaunch to fall back to here: $PSCommandPath
+    # points at the compiled .exe, and "powershell.exe -File" cannot target an
+    # .exe, only a .ps1 - so failing loudly beats a broken relaunch attempt.
     if (-not (Test-Admin)) {
-        Write-Step "Requesting administrator rights (needed to install Docker)..."
-        $scriptPath = $MyInvocation.MyCommand.Path
-        Start-Process powershell.exe -Verb RunAs -ArgumentList "-NoProfile -ExecutionPolicy Bypass -File `"$scriptPath`""
-        exit 0
+        throw "This needs to run as Administrator. Right-click install.exe and choose 'Run as administrator'."
     }
 }
 
@@ -176,24 +178,36 @@ function Wait-ForHealth {
 
 # --- main ---------------------------------------------------------------
 
-Assert-Elevated
+try {
+    Assert-Elevated
 
-if (-not (Test-DockerInstalled)) {
-    Install-Docker
     if (-not (Test-DockerInstalled)) {
-        Write-Host "Docker still isn't on PATH. Open a new terminal and run this installer again." -ForegroundColor Yellow
-        exit 0
+        Install-Docker
+        if (-not (Test-DockerInstalled)) {
+            Write-Host "Docker still isn't on PATH. Open a new terminal and run this installer again." -ForegroundColor Yellow
+            exit 0
+        }
     }
+
+    Wait-ForDocker
+    Write-AppFiles
+    Start-Stack
+    Wait-ForModel
+    Wait-ForHealth
+
+    Write-Step "Opening the app..."
+    Start-Process $FrontendUrl
+
+    Write-Host ""
+    Write-Host "Done. The app is running at $FrontendUrl" -ForegroundColor Green
+} catch {
+    Write-Host ""
+    Write-Host "Setup failed:" -ForegroundColor Red
+    Write-Host $_.Exception.Message -ForegroundColor Red
+} finally {
+    # Without this, any early failure closes the window before you can read
+    # it - this is what "opens for a second then vanishes" looks like.
+    Write-Host ""
+    Write-Host "Press Enter to close this window..."
+    Read-Host | Out-Null
 }
-
-Wait-ForDocker
-Write-AppFiles
-Start-Stack
-Wait-ForModel
-Wait-ForHealth
-
-Write-Step "Opening the app..."
-Start-Process $FrontendUrl
-
-Write-Host ""
-Write-Host "Done. The app is running at $FrontendUrl" -ForegroundColor Green
