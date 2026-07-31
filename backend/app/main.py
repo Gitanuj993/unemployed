@@ -35,14 +35,18 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(title="AI Career Assistant", version="0.1.0", lifespan=lifespan)
 
-# The Next.js dev server runs on :3000 and calls this API on :8000. Both
-# hostnames are allowed because "localhost" and "127.0.0.1" are different
-# origins to a browser even though they reach the same machine - whichever
-# one you type into the address bar has to be in this list, or the
-# CORSMiddleware itself returns 400 on every request before it reaches a route.
+# The Next.js dev server calls this API on :8000, and a browser treats
+# "localhost" and "127.0.0.1" as different origins even though they reach the
+# same machine. Pinning an exact port was a trap: when :3000 is already taken
+# Next silently starts on :3001, every preflight then fails CORS, and the
+# CORSMiddleware answers 400 before the request reaches a route - so the app
+# renders completely empty with a healthy backend and no error on the page.
+# Any localhost port is allowed instead. This binds to 127.0.0.1 and holds
+# nothing but your own data, so the origin check was never the security
+# boundary - not being reachable off this machine is.
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000", "http://127.0.0.1:3000"],
+    allow_origin_regex=r"http://(localhost|127\.0\.0\.1)(:\d+)?",
     allow_methods=["*"],
     allow_headers=["*"],
 )
