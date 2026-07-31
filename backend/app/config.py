@@ -18,7 +18,13 @@ REPO_ROOT = Path(__file__).resolve().parents[2]
 
 
 class Settings(BaseSettings):
-    model_config = SettingsConfigDict(env_file=REPO_ROOT / ".env", extra="ignore")
+    # utf-8-sig, not utf-8: Windows PowerShell writes UTF-8 *with a BOM*, and a
+    # BOM makes the first key parse as "﻿DATABASE_URL" — so the first line
+    # of the file is the one line that silently does nothing. -sig strips it if
+    # present and is identical to utf-8 when it isn't.
+    model_config = SettingsConfigDict(
+        env_file=REPO_ROOT / ".env", env_file_encoding="utf-8-sig", extra="ignore"
+    )
 
     database_url: str = "postgresql+psycopg://jobsearch:jobsearch@localhost:5432/jobsearch"
     # A native Ollama install (the documented setup) owns 11434. The optional
