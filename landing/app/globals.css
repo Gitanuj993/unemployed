@@ -127,6 +127,7 @@
     @apply font-sans;
     /* The page was set too small to read comfortably at arm's length. */
     font-size: 17px;
+    scroll-behavior: smooth;
   }
 }
 /* ---------------------------------------------------------------------------

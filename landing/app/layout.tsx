@@ -1,26 +1,17 @@
 import type { Metadata } from "next";
-import { Instrument_Sans, Instrument_Serif, JetBrains_Mono } from "next/font/google";
+import { Inter, Outfit, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
 import { copy } from "@/lib/copy";
 
 /**
- * Three faces doing three jobs, which is what stops a black and white page
- * reading as an unstyled document.
- *
- * Instrument Serif carries the headings: high contrast, a bit editorial, and it
- * gives the page the one bit of personality it is allowed to have. Instrument
- * Sans is its companion for body text, so the pairing is designed rather than
- * assembled. JetBrains Mono is the wordmark and every shell command, because
- * the thing being sold is a tool you run in a terminal.
+ * Modern clean fonts. Outfit for headings, Inter for body text.
  */
-const display = Instrument_Serif({
+const display = Outfit({
   variable: "--font-display",
   subsets: ["latin"],
-  weight: "400",
-  style: ["normal", "italic"],
 });
 
-const body = Instrument_Sans({
+const body = Inter({
   variable: "--font-body",
   subsets: ["latin"],
 });

@@ -19,15 +19,6 @@ import type { SignupRow } from "@/lib/db";
  * pushed outside it rather than hidden.
  */
 
-/**
- * The block the copy occupies, as percentages of the hero.
- *
- * A rectangle rather than an ellipse, because the copy is a rectangle. An
- * ellipse inscribed in it leaves its corners uncovered, which is exactly where
- * the wide badge at the top ends, and faces kept landing on top of it.
- */
-const KEEP_OUT = { left: 15, right: 85, top: 8, bottom: 92 };
-
 function hash(text: string, salt: number): number {
   let value = salt * 2654435761;
   for (let i = 0; i < text.length; i += 1) {
@@ -38,35 +29,21 @@ function hash(text: string, salt: number): number {
 }
 
 function place(seed: string) {
-  let x = 5 + hash(seed, 0) * 90;
-  let y = 15 + hash(seed, 1) * 80;
+  const isLeft = hash(seed, 4) < 0.5;
+  
+  // Place firmly on the left (2% - 25%) and right (75% - 98%)
+  let x = isLeft 
+    ? 2 + hash(seed, 0) * 23 
+    : 75 + hash(seed, 0) * 23;
 
-  // Landed on the copy? Move it out through whichever side is nearest, so the
-  // crowd hugs the text block instead of forming a ring around it.
-  const inside =
-    x > KEEP_OUT.left && x < KEEP_OUT.right && y > KEEP_OUT.top && y < KEEP_OUT.bottom;
-
-  if (inside) {
-    const outLeft = x - KEEP_OUT.left;
-    const outRight = KEEP_OUT.right - x;
-    const outTop = y - KEEP_OUT.top;
-    const outBottom = KEEP_OUT.bottom - y;
-    const nearest = Math.min(outLeft, outRight, outTop, outBottom);
-
-    if (nearest === outLeft) x = KEEP_OUT.left - 2;
-    else if (nearest === outRight) x = KEEP_OUT.right + 2;
-    else if (nearest === outTop) y = KEEP_OUT.top - 2;
-    else y = KEEP_OUT.bottom + 2;
-  }
-
-  const finalX = x;
-  const finalY = y;
+  // Keep them vertically within 5% and 82% so they don't get lost below the fold
+  let y = 5 + hash(seed, 1) * 77;
 
   // Further from the copy reads as further away: smaller and fainter.
   const depth = hash(seed, 3);
   return {
-    left: `${Math.min(Math.max(finalX, 2), 95)}%`,
-    top: `${Math.min(Math.max(finalY, 3), 92)}%`,
+    left: `${Math.min(Math.max(x, 2), 95)}%`,
+    top: `${Math.min(Math.max(y, 5), 82)}%`,
     size: 42 + Math.round(depth * 28),
     // Visible enough to read as a crowd at a glance, faint enough that the
     // headline still wins. Hover takes whichever one you point at to full.
@@ -120,7 +97,7 @@ function spread(spots: ReturnType<typeof place>[]): ReturnType<typeof place>[] {
   return out.map((s) => ({
     ...s,
     left: `${Math.min(Math.max(s.x, 2), 96)}%`,
-    top: `${Math.min(Math.max(s.y, 15), 93)}%`,
+    top: `${Math.min(Math.max(s.y, 5), 82)}%`,
   }));
 }
 

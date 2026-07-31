@@ -61,6 +61,9 @@ export function SignupForm({ initialSeed }: { initialSeed: string }) {
       // The provider writes localStorage and tells the hero, the counter and
       // the install steps at once.
       add(data as SignupRow);
+      setTimeout(() => {
+        document.getElementById("install")?.scrollIntoView({ behavior: "smooth" });
+      }, 100);
     } catch {
       setError({ message: copy.join.errors.generic });
     } finally {
