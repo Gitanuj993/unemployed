@@ -6,7 +6,7 @@ import { api, type SetupStatus } from "@/lib/api";
 import { BoardStrip } from "@/components/board/board-strip";
 import { Logo } from "@/components/logo";
 import { PipelineRunner } from "@/components/pipeline/pipeline-runner";
-import { Button } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
 
@@ -61,9 +61,9 @@ export default function Home() {
               {counts?.applied ? ` · ${counts.applied} applied` : ""}
             </p>
           </div>
-          <Button nativeButton={false} render={<Link href="/today" />}>
+          <Link href="/today" className={buttonVariants({ variant: "default" })}>
             Apply today →
-          </Button>
+          </Link>
         </div>
       )}
 
@@ -92,14 +92,15 @@ export default function Home() {
                 )}
               </div>
               {step.href && (
-                <Button
-                  variant={step.id === nextStep?.id ? "default" : "outline"}
-                  size="sm"
-                  nativeButton={false}
-                  render={<Link href={step.href} />}
+                <Link
+                  href={step.href}
+                  className={buttonVariants({
+                    variant: step.id === nextStep?.id ? "default" : "outline",
+                    size: "sm",
+                  })}
                 >
                   {step.done ? "Edit" : "Open"}
-                </Button>
+                </Link>
               )}
               {!step.href && step.action && (
                 <span className="text-xs text-muted-foreground">

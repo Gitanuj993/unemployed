@@ -5,7 +5,7 @@ import { useCallback, useEffect, useState } from "react";
 import { api, type IngestionRun, type Job, type JobStats } from "@/lib/api";
 import { useRemembered } from "@/lib/use-remembered";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
@@ -152,14 +152,12 @@ export default function JobsPage() {
               {q ? `Nothing matches "${q}".` : "No jobs yet."}
             </p>
             {!q && (
-              <Button
-                variant="outline"
-                size="sm"
-                nativeButton={false}
-                render={<Link href="/" />}
+              <Link
+                href="/"
+                className={buttonVariants({ variant: "outline", size: "sm" })}
               >
                 Fetch jobs
-              </Button>
+              </Link>
             )}
           </div>
         )}

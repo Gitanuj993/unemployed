@@ -8,7 +8,7 @@ import { useRemembered } from "@/lib/use-remembered";
 import { FitBreakdown } from "@/components/matches/fit-breakdown";
 import { StatusSelect } from "@/components/status-select";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
 import { SkeletonRows } from "@/components/ui/skeleton";
 
 /**
@@ -148,22 +148,18 @@ export default function TodayPage() {
                   : "All caught up for today."}
             </p>
             <div className="flex gap-2 justify-center">
-              <Button
-                variant="outline"
-                size="sm"
-                nativeButton={false}
-                render={<Link href="/" />}
+              <Link
+                href="/"
+                className={buttonVariants({ variant: "outline", size: "sm" })}
               >
                 {matches.length === 0 ? "Fetch and score jobs" : "Back to home"}
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                nativeButton={false}
-                render={<Link href="/manual-jd" />}
+              </Link>
+              <Link
+                href="/manual-jd"
+                className={buttonVariants({ variant: "outline", size: "sm" })}
               >
                 Paste a job description
-              </Button>
+              </Link>
             </div>
           </div>
         )}

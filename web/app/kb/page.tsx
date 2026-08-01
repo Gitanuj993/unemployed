@@ -6,7 +6,7 @@ import { api, type KBChunk } from "@/lib/api";
 import { AddItemForm } from "@/components/kb/add-item-form";
 import { ChunkList } from "@/components/kb/chunk-list";
 import { SemanticSearch } from "@/components/kb/semantic-search";
-import { Button } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 
 export default function KBPage() {
@@ -38,7 +38,9 @@ export default function KBPage() {
           Fastest way to start: upload your resume &amp; documents and let them be
           parsed into chunks you can review.
         </p>
-        <Button render={<Link href="/kb/import" />}>Import from documents</Button>
+        <Link href="/kb/import" className={buttonVariants({ variant: "default" })}>
+          Import from documents
+        </Link>
       </div>
 
       <AddItemForm onAdded={refresh} />
