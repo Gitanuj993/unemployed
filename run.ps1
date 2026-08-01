@@ -93,7 +93,12 @@ if ($LASTEXITCODE -ne 0) {
         $waited += 5
         docker info *> $null
         if ($LASTEXITCODE -eq 0) { break }
-        if ($waited -ge 180) {
+        # A cold launch (Docker Desktop's own process starting, then its Linux
+        # VM, then the daemon inside it) measured at just over 3 minutes on
+        # ordinary hardware, so 180s cut it off moments before it would have
+        # succeeded. 5 minutes gives real headroom without leaving someone
+        # staring at a frozen terminal indefinitely.
+        if ($waited -ge 300) {
             Write-Host "`nDocker did not start within 3 minutes." -ForegroundColor Red
             Write-Host "  Open Docker Desktop manually, wait for the whale icon to settle,"
             Write-Host "  then run this script again. A fresh install needs a reboot first."
