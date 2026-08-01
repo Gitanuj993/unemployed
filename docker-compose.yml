@@ -107,6 +107,18 @@ services:
       - "3000:3000"
 
 volumes:
+  # Named explicitly, matching the fixed container_names above: compose
+  # otherwise prefixes volume names with the *directory* name, so two clones
+  # of this repo in differently-named folders get two different, disconnected
+  # volumes while sharing the same container name. Recreating the container
+  # from the "wrong" folder then silently attaches a fresh empty database
+  # under a name that looks identical to the one holding real data - which is
+  # exactly what happened once already. Pinning the name makes the volume as
+  # global as the container, so any clone on this machine always reattaches
+  # the same data.
   pgdata:
+    name: jobsearch_pgdata
   ollamadata:
+    name: jobsearch_ollamadata
   generated:
+    name: jobsearch_generated

@@ -90,6 +90,12 @@ services:
       - "3000:3000"
 
 volumes:
+  # Named explicitly - see docker-compose.yml for why. The installer always
+  # unpacks to a fixed %LOCALAPPDATA%\JobSearchAI, so this isn't live today,
+  # but pinning it costs nothing and closes the same hole permanently.
   pgdata:
+    name: jobsearch_pgdata
   ollamadata:
+    name: jobsearch_ollamadata
   generated:
+    name: jobsearch_generated
