@@ -32,12 +32,12 @@ function place(seed: string) {
   const isLeft = hash(seed, 4) < 0.5;
   
   // Place firmly on the left (2% - 25%) and right (75% - 98%)
-  let x = isLeft 
-    ? 2 + hash(seed, 0) * 23 
+  const x = isLeft
+    ? 2 + hash(seed, 0) * 23
     : 75 + hash(seed, 0) * 23;
 
   // Keep them vertically within 5% and 82% so they don't get lost below the fold
-  let y = 5 + hash(seed, 1) * 77;
+  const y = 5 + hash(seed, 1) * 77;
 
   // Further from the copy reads as further away: smaller and fainter.
   const depth = hash(seed, 3);

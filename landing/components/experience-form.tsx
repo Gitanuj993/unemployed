@@ -1,9 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import Link from "next/link";
 
-import { usePeople } from "./people-provider";
 import { copy } from "@/lib/copy";
 import { RESULTS, ROUND_TYPES, ROUND_OUTCOMES } from "@/lib/validate";
 import type { ExperienceRow } from "@/lib/db";
@@ -18,41 +16,24 @@ function emptyRound(): DraftRound {
  * Reuses the same localStorage client id as signup-form.tsx: posting an
  * experience is tied to the identity someone already made when they joined
  * the wall, not a new account.
+ *
+ * Whether someone is allowed to post at all is the caller's business, not this
+ * component's: it renders inside a dialog that is only reachable once you have
+ * joined, so a second gate here would be dead code behind a locked door.
  */
 export function ExperienceForm({ onPosted }: { onPosted: (experience: ExperienceRow) => void }) {
-  const { joined } = usePeople();
   const [company, setCompany] = useState("");
   const [role, setRole] = useState("");
   const [result, setResult] = useState<(typeof RESULTS)[number]>("offer");
   const [summary, setSummary] = useState("");
   const [rounds, setRounds] = useState<DraftRound[]>([emptyRound()]);
   const [busy, setBusy] = useState(false);
-  const [posted, setPosted] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const clientId = useMemo(() => {
     if (typeof window === "undefined") return null;
     return localStorage.getItem("unemployed:client");
   }, []);
-
-  if (!joined) {
-    return (
-      <div className="card flex flex-col items-start gap-4">
-        <p className="text-base">{copy.experiences.locked}</p>
-        <Link href="/#wall" className="btn-solid">
-          {copy.join.submit}
-        </Link>
-      </div>
-    );
-  }
-
-  if (posted) {
-    return (
-      <div className="card">
-        <p className="font-medium">{copy.experiences.form.posted}</p>
-      </div>
-    );
-  }
 
   function updateRound(i: number, patch: Partial<DraftRound>) {
     setRounds((prev) => prev.map((r, idx) => (idx === i ? { ...r, ...patch } : r)));
@@ -73,7 +54,8 @@ export function ExperienceForm({ onPosted }: { onPosted: (experience: Experience
         setError(copy.experiences.form.errors[key] ?? copy.experiences.form.errors.generic);
         return;
       }
-      setPosted(true);
+      // The parent closes the dialog and prepends this to the board, so the
+      // post is visible immediately without a refetch.
       onPosted({
         id: String(data.id),
         company,
@@ -81,6 +63,7 @@ export function ExperienceForm({ onPosted }: { onPosted: (experience: Experience
         result,
         summary,
         created_at: new Date().toISOString(),
+        signup_id: String(data.signup_id),
         name: data.name,
         seed: data.seed,
         gender: data.gender,
@@ -100,7 +83,8 @@ export function ExperienceForm({ onPosted }: { onPosted: (experience: Experience
     rounds.every((r) => r.description.trim().length > 0);
 
   return (
-    <div className="card space-y-5">
+    // No card border: the dialog is already the container.
+    <div className="space-y-5">
       <div className="grid gap-4 sm:grid-cols-2">
         <Field label={copy.experiences.form.companyLabel}>
           <input

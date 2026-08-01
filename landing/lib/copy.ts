@@ -21,7 +21,7 @@ export const copy = {
       { href: "/#story", label: "Why" },
       { href: "/#what", label: "What it does" },
       { href: "/#local", label: "Your laptop" },
-      { href: "/#wall", label: "The wall" },
+      { href: "/wall", label: "The wall" },
       { href: "/experiences", label: "Interview experiences" },
     ],
     cta: "Join the wall",
@@ -92,7 +92,7 @@ export const copy = {
     heading: "Two commands.",
     locked: "Add yourself to the wall and the setup steps open up.",
     intro:
-      "Fifteen minutes, and most of that is a download you can walk away from. No database to install, and no Docker — you need Python, Node and Ollama.",
+      "Fifteen minutes, and most of that is a download you can walk away from. No database to install, and no Docker. You need Python, Node and Ollama.",
     steps: [
       {
         title: "Clone it",
@@ -102,7 +102,7 @@ export const copy = {
       {
         title: "Run it",
         command: "powershell -ExecutionPolicy Bypass -File .\\run.ps1",
-        note: "On macOS or Linux: ./run.sh — the same script. It installs what's missing, downloads the model (~2 GB, once), sets up the database and starts everything. Run the same command every time after; it skips straight to launching.",
+        note: "On macOS or Linux, run ./run.sh instead. Same script. It installs what's missing, downloads the model (about 2 GB, once), sets up the database and starts everything. Run the same command every time after; it skips straight to launching.",
       },
     ],
     outroBefore: "Then open",
@@ -122,7 +122,7 @@ export const copy = {
         {
           title: "Get the model",
           command: "ollama pull llama3.2:3b",
-          note: "You will also need Node 20+ and Python 3.10+. There is no database to install — the app creates a SQLite file.",
+          note: "You will also need Node 20+ and Python 3.10+. There is no database to install. The app creates a SQLite file.",
         },
         {
           title: "Start Backend",
@@ -173,6 +173,12 @@ export const copy = {
     caption: (n: number) =>
       n === 1 ? "1 person is running this" : `${n} people are running this`,
     offline: "Cannot reach the wall right now.",
+    tapHint: "Pick anyone to read their interview experiences.",
+    personAria: (name: string) => `Interview experiences from ${name}`,
+    personLoading: "Looking that up.",
+    personEmpty: (name: string) => `${name} has not posted an interview experience yet.`,
+    personCount: (n: number) =>
+      n === 1 ? "1 interview experience" : `${n} interview experiences`,
   },
 
   experiences: {

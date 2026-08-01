@@ -4,8 +4,12 @@
  * Pure functions on purpose: this is the file worth testing, and none of it
  * needs a request, a database or a network.
  */
-import { COUNTRY_CODES } from "./countries";
-import { GENDERS, type Gender } from "./gender-options";
+// Explicit .ts extensions: `node --test` strips types but does not resolve
+// extensionless paths the way a bundler does, so without these the test suite
+// cannot import this module at all. tsconfig already sets
+// allowImportingTsExtensions, and the bundler is happy either way.
+import { COUNTRY_CODES } from "./countries.ts";
+import { GENDERS, type Gender } from "./gender-options.ts";
 
 export const MAX_NAME_LENGTH = 24;
 

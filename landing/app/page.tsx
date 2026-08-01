@@ -7,7 +7,6 @@ import { Logo } from "@/components/logo";
 import { PageNav } from "@/components/page-nav";
 import { PeopleProvider } from "@/components/people-provider";
 import { Reveal } from "@/components/reveal";
-import { Wall } from "@/components/wall";
 import { recentSignups, type SignupRow } from "@/lib/db";
 import { copy } from "@/lib/copy";
 
@@ -38,9 +37,7 @@ export default function Home() {
 
         <Local />
 
-        <Suspense fallback={null}>
-          <WallAndInstall />
-        </Suspense>
+        <InstallSection />
 
         <Footer />
       </main>
@@ -76,7 +73,7 @@ function Hero() {
         </p>
 
         <div className="mt-11 flex flex-wrap items-center justify-center gap-3">
-          <a href="#wall" className="btn-solid">
+          <a href="#install" className="btn-solid">
             {copy.hero.primary}
           </a>
           <a href="#what" className="btn-outline">
@@ -210,18 +207,9 @@ async function HeroCount() {
   return <HeroCountLine fromServer={everyone} />;
 }
 
-async function WallAndInstall() {
-  const everyone = await people();
-  return (
-    <>
-      <Wall fromServer={everyone} initialSeed={crypto.randomUUID().slice(0, 8)} />
-      <InstallSection />
-    </>
-  );
-}
-
 /**
- * One read per request, shared by the hero, the counter and the wall.
+ * One read per request, shared by the hero crowd and the counter. The wall
+ * itself lives at /wall now and does its own read.
  *
  * An unreachable database returns an empty list rather than throwing: the page
  * is still worth reading without the faces on it.

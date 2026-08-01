@@ -1,16 +1,21 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 
 import { ExperienceCard } from "./experience-card";
 import { ExperienceForm } from "./experience-form";
+import { Modal } from "./modal";
+import { usePeople } from "./people-provider";
 import { copy } from "@/lib/copy";
 import type { ExperienceRow } from "@/lib/db";
 
 export function ExperienceWall({ fromServer }: { fromServer: ExperienceRow[] }) {
+  const { joined } = usePeople();
   const [experiences, setExperiences] = useState(fromServer);
   const [company, setCompany] = useState("");
   const [loading, setLoading] = useState(false);
+  const [composing, setComposing] = useState(false);
 
   async function applyFilter(value: string) {
     setCompany(value);
@@ -44,13 +49,27 @@ export function ExperienceWall({ fromServer }: { fromServer: ExperienceRow[] }) 
             {copy.experiences.body}
           </p>
 
+          {/* The form is behind a button rather than sitting open above the
+              board: most people arrive here to read, and a long empty form
+              pushes everything they came for below the fold. */}
           <div className="mt-8">
-            <ExperienceForm onPosted={onPosted} />
+            {joined ? (
+              <button type="button" onClick={() => setComposing(true)} className="btn-solid">
+                {copy.experiences.postCta}
+              </button>
+            ) : (
+              <div className="card flex flex-col items-start gap-4">
+                <p className="text-base">{copy.experiences.locked}</p>
+                <Link href="/wall" className="btn-solid">
+                  {copy.join.submit}
+                </Link>
+              </div>
+            )}
           </div>
         </div>
       </section>
 
-      <section className="pt-16 pb-32 px-6 md:px-12 lg:px-24">
+      <section className="pt-14 pb-32 px-6 md:px-12 lg:px-24">
         <div className="mx-auto w-full max-w-3xl">
           <label className="block max-w-xs space-y-1.5 text-sm">
             <span className="font-medium">{copy.experiences.filterLabel}</span>
@@ -74,6 +93,19 @@ export function ExperienceWall({ fromServer }: { fromServer: ExperienceRow[] }) 
           </ul>
         </div>
       </section>
+
+      <Modal
+        open={composing}
+        onClose={() => setComposing(false)}
+        title={copy.experiences.postCta}
+      >
+        <ExperienceForm
+          onPosted={(experience) => {
+            onPosted(experience);
+            setComposing(false);
+          }}
+        />
+      </Modal>
     </>
   );
 }

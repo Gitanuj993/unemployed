@@ -25,11 +25,15 @@ export async function OPTIONS() {
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const company = searchParams.get("company")?.trim() || undefined;
+  // Ids are bigints, so only digits can be one. Anything else is dropped rather
+  // than handed to Postgres to reject.
+  const rawSignup = searchParams.get("signupId")?.trim();
+  const signupId = rawSignup && /^\d+$/.test(rawSignup) ? rawSignup : undefined;
   const raw = Number(searchParams.get("limit"));
   const limit = Number.isFinite(raw) ? Math.min(Math.max(Math.trunc(raw), 1), 200) : 100;
 
   try {
-    const experiences = await recentExperiences({ company, limit });
+    const experiences = await recentExperiences({ company, signupId, limit });
     return Response.json(
       { count: experiences.length, experiences },
       { headers: { ...CORS, ...CACHE } },
@@ -105,10 +109,10 @@ export async function POST(request: Request) {
         where exists (select 1 from inserted)
         returning experience_id
       )
-      select inserted.id, s.name, s.seed, s.gender
+      select inserted.id, s.id as signup_id, s.name, s.seed, s.gender
       from inserted
       join signups s on s.id = ${signupId}
-    `) as { id: string; name: string; seed: string; gender: string }[];
+    `) as { id: string; signup_id: string; name: string; seed: string; gender: string }[];
 
     if (rows.length === 0) return fail("rateLimited", 429);
     return Response.json(rows[0], { status: 201, headers: CORS });

@@ -48,7 +48,7 @@ export function PageNav() {
         </div>
 
         <Link
-          href="/#wall"
+          href="/wall"
           className="border-foreground bg-foreground text-background ml-auto rounded-lg border px-3 py-1.5 text-sm font-medium transition-opacity hover:opacity-85 focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:outline-none sm:ml-0"
         >
           {copy.nav.cta}

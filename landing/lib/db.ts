@@ -54,7 +54,9 @@ export type ExperienceRow = {
   result: string;
   summary: string;
   created_at: string;
-  // Joined from the signup that posted it.
+  // Who posted it. `signup_id` is what lets the wall ask for one person's
+  // experiences without loading everyone's and filtering in the browser.
+  signup_id: string;
   name: string;
   seed: string;
   gender: "female" | "male" | "neutral";
@@ -72,21 +74,23 @@ export async function signupIdForClient(clientId: string): Promise<string | null
 
 /**
  * Newest first, optionally filtered by company (case-insensitive prefix
- * match). Rounds come back nested via json_agg so this is one round trip
- * instead of N+1.
+ * match) or by the person who posted them. Rounds come back nested via
+ * json_agg so this is one round trip instead of N+1.
  */
 export async function recentExperiences({
   company,
+  signupId,
   limit = 100,
 }: {
   company?: string;
+  signupId?: string;
   limit?: number;
 }): Promise<ExperienceRow[]> {
   const sql = db();
   const rows = await sql`
     select
       e.id, e.company, e.role, e.result, e.summary, e.created_at,
-      s.name, s.seed, s.gender,
+      e.signup_id, s.name, s.seed, s.gender,
       coalesce(
         (
           select json_agg(
@@ -106,6 +110,7 @@ export async function recentExperiences({
     join signups s on s.id = e.signup_id
     where e.hidden = false
       and (${company ?? null}::text is null or lower(e.company) like lower(${company ?? ""}) || '%')
+      and (${signupId ?? null}::bigint is null or e.signup_id = ${signupId ?? null}::bigint)
     order by e.created_at desc
     limit ${limit}
   `;
