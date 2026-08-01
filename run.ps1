@@ -69,7 +69,24 @@ Say "Checking Docker"
 docker info *> $null
 if ($LASTEXITCODE -ne 0) {
     Ok "Docker isn't running - starting Docker Desktop..."
-    Start-Process "Docker Desktop" -ErrorAction SilentlyContinue
+    # "Docker Desktop" is not on PATH and is not a registered App Path, so
+    # Start-Process with just that name fails on a completely normal install -
+    # it has to be launched by its real path. Try the common locations; if none
+    # exist, say so instead of silently doing nothing and spending three
+    # minutes waiting for a daemon that will never start.
+    $dockerExe = @(
+        "$env:ProgramFiles\Docker\Docker\Docker Desktop.exe",
+        "${env:ProgramFiles(x86)}\Docker\Docker\Docker Desktop.exe",
+        "$env:LOCALAPPDATA\Docker\Docker Desktop.exe"
+    ) | Where-Object { Test-Path $_ } | Select-Object -First 1
+
+    if (-not $dockerExe) {
+        Write-Host "`nDocker is installed but Docker Desktop.exe could not be found." -ForegroundColor Red
+        Write-Host "  Start Docker Desktop yourself from the Start menu, wait for the whale"
+        Write-Host "  icon to settle, then run this script again."
+        exit 1
+    }
+    Start-Process $dockerExe
     $waited = 0
     while ($true) {
         Start-Sleep -Seconds 5
