@@ -5,6 +5,7 @@ import { useState } from "react";
 import { toast } from "sonner";
 import { api, type ChunkIn, type ParseJob } from "@/lib/api";
 import { ChunkEditor, type EditableChunk } from "@/components/kb/chunk-editor";
+import { GoBackTo } from "@/components/go-back-to";
 import { Button } from "@/components/ui/button";
 import { ProgressBar } from "@/components/ui/progress-bar";
 import {
@@ -193,6 +194,7 @@ export default function ImportPage() {
               Your local model reads each section in full — a long CV can take
               several minutes. Nothing is saved until you review it.
             </p>
+            <GoBackTo />
           </div>
         )}
       </div>

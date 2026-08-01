@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { api, type PipelineKind, type PipelineRun } from "@/lib/api";
 import { Button } from "@/components/ui/button";
+import { GoBackTo } from "@/components/go-back-to";
 import { ProgressBar } from "@/components/ui/progress-bar";
 
 const ACTIONS: { kind: PipelineKind; label: string; hint: string }[] = [
@@ -79,8 +80,10 @@ export function PipelineRunner({ onFinished }: { onFinished?: () => void }) {
         <div className="space-y-1.5">
           <ProgressBar done={run.done} total={run.total} message={run.message} />
           <p className="text-xs text-muted-foreground">
-            Keep this tab open — you can use the rest of the app while it runs.
+            This takes a while — your own machine is reading every posting. Keep
+            this tab open; the rest of the app still works.
           </p>
+          <GoBackTo />
         </div>
       )}
 

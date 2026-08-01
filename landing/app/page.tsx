@@ -1,4 +1,5 @@
 import { Suspense, cache } from "react";
+import Link from "next/link";
 
 import { HeroBoard } from "@/components/hero-board";
 import { HeroCountLine } from "@/components/hero-count";
@@ -38,6 +39,8 @@ export default async function Home() {
         <What />
 
         <Local />
+
+        <GuideTeaser />
 
         <InstallSection />
 
@@ -180,6 +183,48 @@ function Local() {
             </li>
           ))}
         </ul>
+      </Reveal>
+    </Band>
+  );
+}
+
+/**
+ * Sits directly above the install steps on purpose. The most common way to be
+ * disappointed by this app is to install it and then feed it three lines, so
+ * the last thing read before the commands is what to do first.
+ */
+function GuideTeaser() {
+  return (
+    <Band id="guide" className="border-t">
+      <Reveal className="grid gap-10 md:grid-cols-12 md:gap-14">
+        <div className="md:col-span-5">
+          <Label>{copy.guideTeaser.label}</Label>
+          <h2 className="mt-5 font-serif text-3xl leading-tight sm:text-4xl">
+            {copy.guideTeaser.heading}
+          </h2>
+          <p className="text-muted-foreground mt-5 text-base leading-relaxed">
+            {copy.guideTeaser.body}
+          </p>
+          <Link href="/guide" className="btn-solid mt-7 inline-flex">
+            {copy.guideTeaser.cta}
+          </Link>
+        </div>
+
+        <ol className="space-y-4 md:col-span-6 md:col-start-7">
+          {copy.guideTeaser.points.map((point, i) => (
+            <li key={point.title} className="card flex gap-4">
+              <span className="text-muted-foreground/60 font-mono text-xs tabular-nums">
+                {String(i + 1).padStart(2, "0")}
+              </span>
+              <div>
+                <h3 className="font-serif text-xl leading-tight">{point.title}</h3>
+                <p className="text-muted-foreground mt-1.5 text-sm leading-relaxed">
+                  {point.body}
+                </p>
+              </div>
+            </li>
+          ))}
+        </ol>
       </Reveal>
     </Band>
   );

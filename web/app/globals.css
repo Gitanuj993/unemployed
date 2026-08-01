@@ -194,6 +194,22 @@
   }
 }
 
+/* The rotating tail of "Go back to ..." while a slow local model works. */
+.quip {
+  animation: quip-in 0.4s ease-out;
+}
+
+@keyframes quip-in {
+  from {
+    opacity: 0;
+    transform: translateY(0.4em);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
 /* Motion is the joke, not the information — without it, land on the end state. */
 @media (prefers-reduced-motion: reduce) {
   .logo__strike,
@@ -207,5 +223,8 @@
   }
   .logo__struck {
     opacity: 0.45;
+  }
+  .quip {
+    animation: none;
   }
 }

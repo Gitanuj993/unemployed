@@ -2,6 +2,8 @@
 
 import { useEffect, useState } from "react";
 
+import { GoBackTo } from "@/components/go-back-to";
+
 /**
  * "Something is happening and it is not stuck."
  *
@@ -26,6 +28,7 @@ export function Working({ label }: { label: string }) {
       <div className="h-1.5 overflow-hidden rounded bg-muted">
         <div className="h-full w-1/3 animate-pulse rounded bg-foreground/70" />
       </div>
+      <GoBackTo />
     </div>
   );
 }
