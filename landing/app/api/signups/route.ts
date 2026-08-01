@@ -2,6 +2,7 @@ import { db, recentSignups, type SignupRow } from "@/lib/db";
 import { asGenderStrict, checkName, isValidCountry, isValidSeedInput } from "@/lib/validate";
 import { CACHE, CORS, corsOptions } from "@/lib/cors";
 import { ipHash, isUniqueViolation } from "@/lib/ip";
+import { readLimit } from "@/lib/limit";
 
 // Never prerender. The read is request-time by nature, and if `cacheComponents`
 // is ever switched on, a board frozen at build time is a silent bug.
@@ -17,8 +18,7 @@ export async function OPTIONS() {
 }
 
 export async function GET(request: Request) {
-  const raw = Number(new URL(request.url).searchParams.get("limit"));
-  const limit = Number.isFinite(raw) ? Math.min(Math.max(Math.trunc(raw), 1), 500) : 200;
+  const limit = readLimit(new URL(request.url).searchParams, { fallback: 200, max: 500 });
 
   try {
     const signups = await recentSignups(limit);

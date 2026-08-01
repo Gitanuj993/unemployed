@@ -83,9 +83,9 @@ export function PersonExperiences({
                 <p className="text-muted-foreground mb-4 text-sm">
                   {copy.wall.personCount(experiences.length)}
                 </p>
-                <ul className="space-y-4">
+                <ul className="space-y-2">
                   {experiences.map((experience) => (
-                    <ExperienceCard key={experience.id} experience={experience} />
+                    <ExperienceCard key={experience.id} experience={experience} collapsible />
                   ))}
                 </ul>
               </>

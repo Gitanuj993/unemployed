@@ -213,6 +213,8 @@ export const copy = {
     },
     flag: "Report",
     flagged: "Reported",
+    hideRounds: "Hide rounds",
+    roundCount: (n: number) => (n === 1 ? "1 round" : `${n} rounds`),
     form: {
       companyLabel: "Company",
       companyPlaceholder: "e.g. Freshworks",

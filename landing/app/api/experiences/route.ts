@@ -9,6 +9,7 @@ import {
 } from "@/lib/validate";
 import { CACHE, CORS, corsOptions } from "@/lib/cors";
 import { ipHash } from "@/lib/ip";
+import { readLimit } from "@/lib/limit";
 
 // Same reasoning as app/api/signups/route.ts: request-time data, never
 // prerendered.
@@ -29,8 +30,7 @@ export async function GET(request: Request) {
   // than handed to Postgres to reject.
   const rawSignup = searchParams.get("signupId")?.trim();
   const signupId = rawSignup && /^\d+$/.test(rawSignup) ? rawSignup : undefined;
-  const raw = Number(searchParams.get("limit"));
-  const limit = Number.isFinite(raw) ? Math.min(Math.max(Math.trunc(raw), 1), 200) : 100;
+  const limit = readLimit(searchParams, { fallback: 100, max: 200 });
 
   try {
     const experiences = await recentExperiences({ company, signupId, limit });
