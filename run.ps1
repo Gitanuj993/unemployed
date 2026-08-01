@@ -36,6 +36,25 @@ function Need($cmd, $name, $how) {
     }
 }
 
+function Probe($block) {
+    <#
+      Run a native command that is *allowed* to fail, and return its stdout.
+
+      $ErrorActionPreference = "Stop" makes PowerShell 5.1 treat anything a
+      native executable writes to stderr as a terminating error - even when the
+      exit code is 0. Every check below is asking a question whose answer may
+      legitimately be "no" ("are the packages installed?", "does this python
+      work?"), and "no" is usually delivered as a traceback on stderr. Without
+      relaxing the preference here, finding out that work is needed aborts the
+      script instead of doing the work.
+    #>
+    $previous = $ErrorActionPreference
+    $ErrorActionPreference = "Continue"
+    try { return (& $block 2>$null | Out-String).Trim() }
+    catch { return "" }
+    finally { $ErrorActionPreference = $previous }
+}
+
 # --- 1. Prerequisites -------------------------------------------------------
 Say "Checking prerequisites"
 Need "node" "Node.js" "winget install OpenJS.NodeJS.LTS -e"
@@ -48,8 +67,8 @@ Need "ollama" "Ollama" "winget install Ollama.Ollama -e"
 $Python = $null
 foreach ($candidate in @("py", "python", "python3")) {
     if (-not (Get-Command $candidate -ErrorAction SilentlyContinue)) { continue }
-    $probe = & $candidate -c "import sys; print(sys.version_info >= (3, 10))" 2>$null
-    if ($probe -and $probe.Trim() -eq "True") { $Python = $candidate; break }
+    $version = Probe { & $candidate -c "import sys; print(sys.version_info >= (3, 10))" }
+    if ($version -eq "True") { $Python = $candidate; break }
 }
 if (-not $Python) {
     Write-Host "`nNo working Python 3.10 or newer was found." -ForegroundColor Red
@@ -83,7 +102,7 @@ catch {
     }
 }
 
-$models = ollama list 2>$null | Out-String
+$models = Probe { ollama list }
 if ($models -notmatch [regex]::Escape($Model)) {
     Ok "Downloading $Model (about 2 GB, one time)..."
     ollama pull $Model
@@ -102,9 +121,22 @@ if (-not (Test-Path $Venv)) {
     try { & $Python -m venv .venv } finally { Pop-Location }
 }
 
-# Cheapest honest check that the install finished: can we import the app?
-& $Venv -c "import fastapi, sentence_transformers, alembic" *> $null
-if ($LASTEXITCODE -ne 0) {
+# Has the install already happened? `find_spec` answers that without importing
+# anything, which matters twice over.
+#
+# It must not raise: an `import` of a missing module writes a traceback to
+# stderr, and with $ErrorActionPreference = "Stop" PowerShell turns a native
+# command's stderr into a *terminating* error. So the check for "packages are
+# missing" would kill the script instead of installing them - a bug only a
+# first-time user could ever hit, since it needs an empty venv to fire.
+#
+# It is also far quicker: importing sentence_transformers drags in PyTorch and
+# takes seconds, on every single run, to answer a question about file layout.
+$check = "import importlib.util as u; " +
+         "print(all(u.find_spec(m) is not None for m in ('fastapi','sentence_transformers','alembic')))"
+$installed = Probe { & $Venv -c $check }
+
+if ($installed -ne "True") {
     Ok "Installing Python packages (a few minutes - PyTorch is large)..."
     & $Venv -m pip install --disable-pip-version-check -q --upgrade pip
     & $Venv -m pip install --disable-pip-version-check -r (Join-Path $Backend "requirements.txt")

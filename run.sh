@@ -72,8 +72,11 @@ ok "$MODEL ready"
 say "Preparing the backend"
 [ -x "$VENV" ] || (cd "$BACKEND" && python3 -m venv .venv)
 
-# Cheapest honest check that the install finished: can we import the app?
-if ! "$VENV" -c "import fastapi, sentence_transformers, alembic" >/dev/null 2>&1; then
+# Has the install already happened? `find_spec` answers that without importing
+# anything - importing sentence_transformers drags in PyTorch and takes seconds,
+# on every run, to answer a question about file layout.
+CHECK='import importlib.util as u; import sys; sys.exit(0 if all(u.find_spec(m) for m in ("fastapi","sentence_transformers","alembic")) else 1)'
+if ! "$VENV" -c "$CHECK" >/dev/null 2>&1; then
   ok "Installing Python packages (a few minutes - PyTorch is large)..."
   "$VENV" -m pip install --disable-pip-version-check -q --upgrade pip
   "$VENV" -m pip install --disable-pip-version-check -r "$BACKEND/requirements.txt"
