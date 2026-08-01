@@ -56,9 +56,9 @@ export function ProfileForm({
         setError(copy.join.errors[key] ?? copy.join.errors.generic);
         return;
       }
-      // The wall is rendered on the server, so a refresh is what makes the new
-      // row appear rather than pushing it into client state.
-      router.push("/wall");
+      // The install steps are what the user came for, so take them there.
+      // Refresh to ensure server state is updated.
+      router.push("/#install");
       router.refresh();
     } catch {
       setError(copy.join.errors.generic);

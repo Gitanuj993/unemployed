@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 
 import { PageNav } from "@/components/page-nav";
+import { InstallSection } from "@/components/install-section";
 import { copy } from "@/lib/copy";
 
 export const metadata: Metadata = {
@@ -56,12 +57,10 @@ export default function GuidePage() {
             <p className="text-muted-foreground mt-3 text-base leading-relaxed">
               {guide.closing.body}
             </p>
-            <Link href="/#install" className="btn-solid mt-8 inline-flex">
-              {copy.hero.primary}
-            </Link>
           </section>
         </div>
       </main>
+      <InstallSection />
     </>
   );
 }

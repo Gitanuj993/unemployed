@@ -18,8 +18,8 @@ export const dynamic = "force-dynamic";
 export default async function JoinPage() {
   const { signedIn, googleName, signup } = await viewer();
 
-  // Already done. Nothing to fill in, so go and look at the wall.
-  if (signup) redirect("/wall");
+  // Already done. Nothing to fill in, so go and look at the install steps.
+  if (signup) redirect("/#install");
 
   return (
     <>

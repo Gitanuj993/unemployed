@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 
 import { Logo } from "./logo";
 import { copy } from "@/lib/copy";
@@ -16,6 +17,7 @@ import { copy } from "@/lib/copy";
  */
 export function PageNav() {
   const [scrolled, setScrolled] = useState(false);
+  const pathname = usePathname();
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 24);
@@ -34,7 +36,16 @@ export function PageNav() {
         {/* Home, not "#top". The nav is on /wall and /experiences too, where an
             anchor just scrolls the page you are already on and leaves you with
             no way back to the landing page. */}
-        <Link href="/" className="shrink-0 rounded-sm focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:outline-none">
+        <Link 
+          href="/" 
+          onClick={(e) => {
+            if (pathname === "/") {
+              e.preventDefault();
+              window.scrollTo({ top: 0, behavior: "smooth" });
+            }
+          }}
+          className="shrink-0 rounded-sm focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:outline-none"
+        >
           <Logo />
         </Link>
 
