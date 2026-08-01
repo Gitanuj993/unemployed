@@ -91,7 +91,9 @@ history never leaves your machine.** That claim has to be verifiable.
 
 - A `PRIVACY.md` naming every outbound request the app makes: public job-board
   APIs, and nothing else. No telemetry, ever.
-- The knowledge base, resumes and generated PDFs stay in the local Postgres volume.
+- The knowledge base and job history stay in one local SQLite file
+  (`data/jobsearch.db`), which is also what makes "delete everything" honest.
+  Generated resumes delete themselves after ten minutes.
 - Export/delete-everything buttons in settings.
 
 ---

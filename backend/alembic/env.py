@@ -21,7 +21,15 @@ def run_migrations_online() -> None:
         poolclass=pool.NullPool,
     )
     with connectable.connect() as connection:
-        context.configure(connection=connection, target_metadata=target_metadata)
+        context.configure(
+            connection=connection,
+            target_metadata=target_metadata,
+            # SQLite cannot ALTER a column - dropping one, changing a type or
+            # adding a constraint all require rebuilding the table. Batch mode
+            # makes Alembic do that rebuild automatically, so a future migration
+            # can be written the same way it would be for any other backend.
+            render_as_batch=connection.dialect.name == "sqlite",
+        )
         with context.begin_transaction():
             context.run_migrations()
 

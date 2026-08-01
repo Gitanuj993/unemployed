@@ -1,39 +1,19 @@
-# Two ways to run this, and the profile decides which:
+# Optional. The app itself needs no Docker at all — the database is a SQLite
+# file and Ollama installs natively, so `run.ps1` / `run.sh` is the normal way
+# to start everything. This file exists for one case: running the whole stack
+# in containers, with no Python, Node or Ollama on the host.
 #
-#   docker compose up -d                  # Postgres only — development
-#   docker compose --profile app up -d    # the full stack, nothing on the host
+#   docker compose --profile app up -d
 #
-# Development runs the backend and frontend on the host for hot reload, against
-# a natively installed Ollama (`ollama pull llama3.2:3b`). So the bare `up -d`
-# starts *only* Postgres — pulling a second, containerised copy of the same 2 GB
-# model would be pure waste. `ollama`, `init`, `api`, `web` and `worker` are all
-# in the `app` profile, which is the self-contained path that needs no host
-# Python, Node or Ollama at all.
+# There is no default (profile-less) service any more. `docker compose up -d`
+# on its own now starts nothing, which is correct — development needs no
+# container.
 #
 services:
-  postgres:
-    # pgvector/pgvector ships Postgres with the pgvector extension preinstalled.
-    image: pgvector/pgvector:pg16
-    container_name: jobsearch-postgres
-    restart: unless-stopped
-    environment:
-      POSTGRES_USER: jobsearch
-      POSTGRES_PASSWORD: jobsearch
-      POSTGRES_DB: jobsearch
-    ports:
-      - "5432:5432"
-    volumes:
-      - pgdata:/var/lib/postgresql/data
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U jobsearch -d jobsearch"]
-      interval: 5s
-      timeout: 5s
-      retries: 10
-
   ollama:
     profiles: ["app"]
-    # Local LLM runtime for the full-stack path. Development uses a native
-    # Ollama install on the host instead, so this stays off by default.
+    # Local LLM runtime for the containerised path. Development uses a native
+    # Ollama install on the host instead.
     image: ollama/ollama:latest
     container_name: jobsearch-ollama
     restart: unless-stopped
@@ -62,18 +42,17 @@ services:
     build: ./backend
     container_name: jobsearch-api
     restart: unless-stopped
-    depends_on:
-      postgres:
-        condition: service_healthy
     environment:
-      # Inside the compose network, services reach each other by name — and
-      # ollama listens on its own 11434 here, not the 11435 host mapping.
-      DATABASE_URL: postgresql+psycopg://jobsearch:jobsearch@postgres:5432/jobsearch
+      # The SQLite file lives on the `appdata` volume so it survives the
+      # container. Inside the compose network ollama listens on its own 11434,
+      # not the 11435 host mapping.
+      DATABASE_URL: sqlite+pysqlite:////data/jobsearch.db
       OLLAMA_URL: http://ollama:11434
       OLLAMA_MODEL: ${OLLAMA_MODEL:-llama3.2:3b}
     ports:
       - "8000:8000"
     volumes:
+      - appdata:/data
       - generated:/app/generated
     command: >
       sh -c "alembic upgrade head &&
@@ -88,9 +67,14 @@ services:
       api:
         condition: service_started
     environment:
-      DATABASE_URL: postgresql+psycopg://jobsearch:jobsearch@postgres:5432/jobsearch
+      DATABASE_URL: sqlite+pysqlite:////data/jobsearch.db
       OLLAMA_URL: http://ollama:11434
       OLLAMA_MODEL: ${OLLAMA_MODEL:-llama3.2:3b}
+    volumes:
+      # The same database file as the api, which is why WAL and a busy timeout
+      # are set on every connection (see app/db/session.py) — two processes
+      # write to it.
+      - appdata:/data
     # Ingest + score once a day. The API applies migrations, so the worker waits.
     command: python -m app.worker.scheduler --daily
 
@@ -108,16 +92,14 @@ services:
 
 volumes:
   # Named explicitly, matching the fixed container_names above: compose
-  # otherwise prefixes volume names with the *directory* name, so two clones
-  # of this repo in differently-named folders get two different, disconnected
-  # volumes while sharing the same container name. Recreating the container
-  # from the "wrong" folder then silently attaches a fresh empty database
-  # under a name that looks identical to the one holding real data - which is
-  # exactly what happened once already. Pinning the name makes the volume as
-  # global as the container, so any clone on this machine always reattaches
-  # the same data.
-  pgdata:
-    name: jobsearch_pgdata
+  # otherwise prefixes volume names with the *directory* name, so two clones of
+  # this repo in differently-named folders would share a container name while
+  # getting two different, disconnected volumes. Recreating a container from
+  # the "wrong" folder then silently attaches an empty database under a name
+  # that looks identical to the one holding real data — which happened once.
+  # Pinning the name makes the volume as global as the container.
+  appdata:
+    name: jobsearch_appdata
   ollamadata:
     name: jobsearch_ollamadata
   generated:

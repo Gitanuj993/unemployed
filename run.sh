@@ -5,6 +5,8 @@
 # have to know which one you are doing. Every step checks before it acts, so
 # the second run skips straight to starting the app.
 #
+# There is no database to install: everything lives in data/jobsearch.db.
+#
 #   ./run.sh
 set -euo pipefail
 
@@ -28,17 +30,14 @@ need() {
 say "Checking prerequisites"
 if [ "$(uname)" = "Darwin" ]; then
   HINT_NODE="brew install node"; HINT_PY="brew install python@3.12"
-  HINT_DOCKER="install Docker Desktop from docker.com"; HINT_OLLAMA="brew install ollama"
+  HINT_OLLAMA="brew install ollama"
 else
   HINT_NODE="sudo apt install nodejs npm"; HINT_PY="sudo apt install python3 python3-venv"
-  HINT_DOCKER="curl -fsSL https://get.docker.com | sh"
   HINT_OLLAMA="curl -fsSL https://ollama.com/install.sh | sh"
 fi
 
-need git "Git" "install git"
 need node "Node.js" "$HINT_NODE"
 need python3 "Python" "$HINT_PY"
-need docker "Docker" "$HINT_DOCKER"
 need ollama "Ollama" "$HINT_OLLAMA"
 
 # Only a floor, not a ceiling: requirements.txt uses minimum bounds so pip
@@ -46,59 +45,9 @@ need ollama "Ollama" "$HINT_OLLAMA"
 python3 -c 'import sys; sys.exit(0 if sys.version_info >= (3,10) else 1)' \
   || die "Python 3.10 or newer is required (found $(python3 --version)).
   $HINT_PY"
-ok "git, node, python, docker, ollama all present"
+ok "node, python and ollama all present"
 
-# --- 2. Docker daemon -------------------------------------------------------
-say "Checking Docker"
-if ! docker info >/dev/null 2>&1; then
-  # On Linux this is as often a permissions problem as a stopped daemon, and
-  # "start Docker" is useless advice when the daemon is already running.
-  if [ "$(uname)" = "Linux" ] && ! groups | grep -qw docker; then
-    die "Docker is installed but this user cannot talk to it.
-  sudo usermod -aG docker \$USER
-  Then log out and back in, and run this script again."
-  fi
-  die "Docker is installed but not running. Start Docker and run this again."
-fi
-ok "Docker is ready"
-
-# --- 3. Postgres ------------------------------------------------------------
-say "Starting Postgres"
-# docker-compose.yml fixes container_name, which is global across the daemon
-# rather than scoped to the compose project - so a second clone of this repo in
-# another folder collides on the name. That container is the database this
-# clone wants anyway (same image, same credentials, same port), so adopt it
-# instead of failing.
-if [ "$(docker ps --filter 'name=^/jobsearch-postgres$' --format '{{.Names}}' 2>/dev/null)" = "jobsearch-postgres" ]; then
-  ok "Reusing the jobsearch-postgres container that is already running"
-else
-  if ! compose_out=$(cd "$ROOT" && docker compose up -d 2>&1); then
-    printf "%s\n" "$compose_out"
-    case "$compose_out" in
-      *"already in use by container"*)
-        die "Could not start Postgres.
-  A stopped jobsearch-postgres container is in the way. Remove it:
-    docker rm -f jobsearch-postgres
-  Your data lives in a docker volume, not the container, so this is safe." ;;
-      *"port is already allocated"*|*5432*)
-        die "Could not start Postgres.
-  Port 5432 is already in use - most likely a Postgres installed directly on
-  this machine. Stop it, then run this script again." ;;
-      *)
-        die "Could not start Postgres. See the docker output above." ;;
-    esac
-  fi
-fi
-
-# Migrations fail with a confusing connection error if we race the container.
-waited=0
-until [ "$(docker inspect -f '{{.State.Health.Status}}' jobsearch-postgres 2>/dev/null)" = "healthy" ]; do
-  sleep 3; waited=$((waited + 3))
-  [ "$waited" -ge 120 ] && die "Postgres never became healthy. Check: docker logs jobsearch-postgres"
-done
-ok "Postgres healthy on 5432"
-
-# --- 4. Model ---------------------------------------------------------------
+# --- 2. Model ---------------------------------------------------------------
 say "Checking the language model"
 # `brew install ollama` installs the binary but starts no server, so every
 # ollama command would fail with a connection error. Start one ourselves if
@@ -119,7 +68,7 @@ if ! ollama list 2>/dev/null | grep -q "$MODEL"; then
 fi
 ok "$MODEL ready"
 
-# --- 5. Backend dependencies ------------------------------------------------
+# --- 3. Backend -------------------------------------------------------------
 say "Preparing the backend"
 [ -x "$VENV" ] || (cd "$BACKEND" && python3 -m venv .venv)
 
@@ -130,16 +79,17 @@ if ! "$VENV" -c "import fastapi, sentence_transformers, alembic" >/dev/null 2>&1
   "$VENV" -m pip install --disable-pip-version-check -r "$BACKEND/requirements.txt"
 fi
 
+# Creates data/jobsearch.db on the first run and is a no-op on every one after.
 ok "Applying database migrations..."
 (cd "$BACKEND" && "$VENV" -m alembic upgrade head)
 ok "Backend ready"
 
-# --- 6. Frontend dependencies ----------------------------------------------
+# --- 4. Frontend ------------------------------------------------------------
 say "Preparing the frontend"
 [ -d "$WEB/node_modules" ] || (cd "$WEB" && npm install)
 ok "Frontend ready"
 
-# --- 7. Start ---------------------------------------------------------------
+# --- 5. Start ---------------------------------------------------------------
 say "Starting the app"
 
 # Starting a second copy on a taken port dies on arrival, and the health check

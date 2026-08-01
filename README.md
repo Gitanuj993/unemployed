@@ -51,10 +51,12 @@ aimed at the skills the role wants that your experience can't yet prove.
 
 ## Setup
 
-**You need** [Git](https://git-scm.com/downloads),
-[Python 3.10+](https://www.python.org/downloads/), [Node 20+](https://nodejs.org/),
-[Docker](https://docs.docker.com/get-docker/) and [Ollama](https://ollama.com/download).
+**You need** [Python 3.10+](https://www.python.org/downloads/),
+[Node 20+](https://nodejs.org/) and [Ollama](https://ollama.com/download).
 Missing one? The script below names it and gives you the command to install it.
+
+**No database to install, and no Docker.** Everything is stored in one SQLite
+file at `data/jobsearch.db` — see [Why SQLite](#why-sqlite).
 
 ```bash
 git clone https://github.com/Maan-Teckwani/unemployed.git
@@ -73,9 +75,9 @@ powershell -ExecutionPolicy Bypass -File .\run.ps1
 ./run.sh
 ```
 
-That's the whole setup. The script starts Postgres, downloads the model, builds
-the virtual environment, installs both dependency trees, applies migrations,
-launches the backend and frontend and opens the app.
+That's the whole setup. The script downloads the model, builds the virtual
+environment, installs both dependency trees, creates the database, launches the
+backend and frontend, and opens the app.
 
 First run takes about ten minutes — PyTorch and a 2 GB model. **Run the exact
 same command every time after**: every step checks before it acts, so later
@@ -88,11 +90,11 @@ Open **http://localhost:3000**.
 <summary>Running it by hand instead</summary>
 
 The script is only doing this, and nothing is stopping you doing it yourself.
-Terminal 1, once:
+Once:
 ```bash
-docker compose up -d && ollama pull llama3.2:3b
+ollama pull llama3.2:3b
 ```
-Terminal 2 — backend (`python3` and `.venv/bin/python` on macOS/Linux):
+Terminal 1 — backend (`python3` and `.venv/bin/python` on macOS/Linux):
 ```bash
 cd backend && python -m venv .venv && .venv\Scripts\python.exe -m pip install -r requirements.txt
 ```
@@ -102,9 +104,24 @@ cd backend && python -m venv .venv && .venv\Scripts\python.exe -m pip install -r
 ```bash
 .venv\Scripts\python.exe -m uvicorn app.main:app --reload --port 8000
 ```
-Terminal 3 — frontend:
+Terminal 2 — frontend:
 ```bash
 cd web && npm install && npm run dev
+```
+</details>
+
+<details>
+<summary>Coming from the Postgres version?</summary>
+
+Earlier builds kept everything in Postgres. To bring that data across, start
+the old container, then run this once — it reads Postgres and writes the new
+SQLite file, changing nothing on the Postgres side:
+```bash
+cd backend && .venv\Scripts\python.exe -m app.db.migrate_from_postgres
+```
+Once you're happy the app looks right, the container and its volume can go:
+```bash
+docker rm -f jobsearch-postgres && docker volume rm jobsearch_pgdata
 ```
 </details>
 
@@ -211,7 +228,7 @@ your live data. `0 filter leak(s)` means nothing is slipping past the filters.
 | | |
 |---|---|
 | Backend | FastAPI · SQLAlchemy · Alembic |
-| Database | PostgreSQL + pgvector |
+| Database | SQLite (one file, `data/jobsearch.db`) |
 | Embeddings | `bge-small-en-v1.5` (384-dim, local) |
 | LLM | Ollama (`llama3.2:3b` by default) |
 | Frontend | Next.js · Tailwind · shadcn/ui |
@@ -225,9 +242,44 @@ project ideas.
 classification, and years-of-experience parsing are all deterministic — faster,
 free, testable, and they don't change their mind between runs.
 
+### Why SQLite
+
+This ran on PostgreSQL with pgvector first. Moving to SQLite deleted the single
+biggest source of setup failure — Docker, WSL2, a reboot, a port, a container,
+a volume — for one user running one app on their own laptop.
+
+The reason it costs nothing here is that Postgres was never doing Postgres-shaped
+work. Vector similarity had **two** SQL call sites, both searching the knowledge
+base: one person's career, a few dozen rows. The expensive path — scoring
+thousands of jobs — already computed similarity in numpy, and the original
+schema declined to build a vector index at all, on the grounds that "with a
+personal KB (tens of chunks) an exact scan is fine". Those two queries moved
+into numpy and joined the code that was already there. Nothing ever queried
+*inside* an array or JSON document either, so those columns became plain JSON.
+
+What SQLite genuinely costs: concurrent writes are serialised. The app does have
+two writers — the API and the ingestion pipeline, which runs for tens of minutes
+— so the database is opened in WAL mode with a busy timeout, letting reads
+continue during writes instead of the UI freezing mid-fetch. See
+[`app/db/session.py`](backend/app/db/session.py).
+
+The honest limit: this would be the wrong call for multiple concurrent users, or
+a knowledge base of ~100k chunks where brute-force similarity stops being free.
+Neither describes one person's job search.
+
+### Resumes expire
+
+Generated resumes are deleted ten minutes after they're made, along with their
+PDFs. A resume is derived from the knowledge base and the job — both stored
+permanently — so keeping it duplicates data the app already has. In the LaTeX
+case that duplicate is your entire Overleaf document. Regenerating costs one
+model call and reflects your *current* knowledge base, which a stored copy
+wouldn't. See [`app/db/retention.py`](backend/app/db/retention.py).
+
 See [TEST_FLOW.md](TEST_FLOW.md) for a manual walkthrough of every feature.
 
 ## Useful checks
 - API health: http://localhost:8000/health
 - API docs (Swagger): http://localhost:8000/docs
-- DB shell: `docker exec -it jobsearch-postgres psql -U jobsearch -d jobsearch`
+- DB shell: `sqlite3 data/jobsearch.db` — or open that file in any SQLite viewer
+- Back it up: copy `data/jobsearch.db` somewhere. That one file is everything.

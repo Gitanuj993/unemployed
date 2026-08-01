@@ -25,6 +25,13 @@ Thumbs.db
 .idea/
 .vscode/
 
+# The database. One file holding everything the user has entered - their
+# profile, knowledge base and job history. Never commit it.
+data/
+*.db
+*.db-wal
+*.db-shm
+
 # Generated artifacts
 backend/generated/
 *.pdf

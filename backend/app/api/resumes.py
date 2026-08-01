@@ -15,6 +15,7 @@ from app.ai.generate_resume import generate
 from app.ai.latex import tailor
 from app.ai.retrieve import retrieve_all
 from app.db.models import CandidateProfile, Job, JobRequirements, Resume, ResumeTemplate
+from app.db.retention import purge_expired_resumes
 from app.db.session import get_db
 from app.schemas import ResumeEditIn
 
@@ -117,6 +118,9 @@ def _generate_latex(db: Session, job: Job, requirements: dict, chunks: list) -> 
 
 @router.get("/{resume_id}/latex")
 def download_latex(resume_id: int, db: Session = Depends(get_db)) -> Response:
+    # Purge before reading, so an expired document can never be served even if
+    # the sweeper has not come round to it yet.
+    purge_expired_resumes(db)
     resume = db.get(Resume, resume_id)
     if resume is None or not resume.latex:
         raise HTTPException(status_code=404, detail="no latex for this resume")
@@ -166,7 +170,8 @@ def edit_resume(resume_id: int, data: ResumeEditIn, db: Session = Depends(get_db
 
 @router.get("/for-job/{job_id}")
 def latest_for_job(job_id: int, db: Session = Depends(get_db)) -> dict | None:
-    """Most recent resume generated for this job, if any."""
+    """Most recent *unexpired* resume generated for this job, if any."""
+    purge_expired_resumes(db)
     resume = db.scalar(
         select(Resume).where(Resume.job_id == job_id).order_by(Resume.created_at.desc())
     )
@@ -175,6 +180,7 @@ def latest_for_job(job_id: int, db: Session = Depends(get_db)) -> dict | None:
 
 @router.get("/{resume_id}/pdf")
 def download_pdf(resume_id: int, db: Session = Depends(get_db)) -> FileResponse:
+    purge_expired_resumes(db)
     resume = db.get(Resume, resume_id)
     if resume is None or not resume.pdf_path or not Path(resume.pdf_path).exists():
         raise HTTPException(status_code=404, detail="pdf not found")

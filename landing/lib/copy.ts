@@ -89,9 +89,10 @@ export const copy = {
 
   install: {
     label: "Getting it running",
-    heading: "Three commands.",
+    heading: "Two commands.",
     locked: "Add yourself to the wall and the setup steps open up.",
-    intro: "Fifteen minutes, and most of that is a download you can walk away from. You need Docker.",
+    intro:
+      "Fifteen minutes, and most of that is a download you can walk away from. No database to install, and no Docker — you need Python, Node and Ollama.",
     steps: [
       {
         title: "Clone it",
@@ -99,14 +100,9 @@ export const copy = {
         note: "Then open the folder in a terminal.",
       },
       {
-        title: "Start it",
-        command: "docker compose --profile app up -d",
-        note: "This single command starts everything: the backend, frontend, Postgres, and Ollama.",
-      },
-      {
-        title: "Pull a model",
-        command: "docker exec jobsearch-ollama ollama pull llama3.2:3b",
-        note: "About 2 GB, once. With 16 GB of RAM use llama3.1:8b for better writing.",
+        title: "Run it",
+        command: "powershell -ExecutionPolicy Bypass -File .\\run.ps1",
+        note: "On macOS or Linux: ./run.sh — the same script. It installs what's missing, downloads the model (~2 GB, once), sets up the database and starts everything. Run the same command every time after; it skips straight to launching.",
       },
     ],
     outroBefore: "Then open",
@@ -121,12 +117,12 @@ export const copy = {
       note: "Windows will warn you it's from an unrecognized publisher. That's expected for a project run by one person with no code signing budget. Click 'More info', then 'Run anyway'.",
     },
     noDocker: {
-      heading: "No Docker?",
+      heading: "Rather do it by hand?",
       steps: [
         {
-          title: "Install Postgres & Ollama",
+          title: "Get the model",
           command: "ollama pull llama3.2:3b",
-          note: "Install them natively. You will also need Node 20+ and Python 3.12+.",
+          note: "You will also need Node 20+ and Python 3.10+. There is no database to install — the app creates a SQLite file.",
         },
         {
           title: "Start Backend",

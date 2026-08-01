@@ -25,11 +25,16 @@ from app.api import (
     setup,
     templates,
 )
+from app.db.retention import start_sweeper
 from app.db.session import get_db
+
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     pipeline.release_stale_runs()
+    # Generated resumes expire (see app.db.retention). The sweeper is what makes
+    # that true while the app sits idle, rather than only when a request lands.
+    start_sweeper()
     yield
 
 

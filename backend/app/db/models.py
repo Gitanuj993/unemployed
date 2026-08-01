@@ -5,7 +5,6 @@ is the atomic unit we embed and later retrieve against a job description.
 """
 from datetime import datetime
 
-from pgvector.sqlalchemy import Vector
 from sqlalchemy import (
     Boolean,
     DateTime,
@@ -18,11 +17,11 @@ from sqlalchemy import (
     UniqueConstraint,
     func,
 )
-from sqlalchemy.dialects.postgresql import ARRAY, JSONB
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.config import settings
 from app.db.session import Base
+from app.db.types import Embedding, JSONColumn, StringList
 from app.ingestion.role_family import DEFAULT_FAMILIES
 
 
@@ -37,7 +36,7 @@ class CandidateProfile(Base):
     phone: Mapped[str] = mapped_column(String(50), default="")
     location: Mapped[str] = mapped_column(String(200), default="")
     # e.g. {"github": "...", "linkedin": "...", "portfolio": "..."}
-    links: Mapped[dict] = mapped_column(JSONB, default=dict)
+    links: Mapped[dict] = mapped_column(JSONColumn, default=dict)
     summary: Mapped[str] = mapped_column(Text, default="")
     # Free text, e.g. "B.Tech Computer Science, VIT Vellore, 2022-2026 | CGPA 8.6".
     # A fresher resume is incomplete without it, and it is never LLM-generated.
@@ -63,11 +62,11 @@ class KBChunk(Base):
     date_range: Mapped[str | None] = mapped_column(String(100), nullable=True)
 
     accomplishment: Mapped[str] = mapped_column(Text)
-    technologies: Mapped[list[str]] = mapped_column(ARRAY(String), default=list)
-    skills: Mapped[list[str]] = mapped_column(ARRAY(String), default=list)
+    technologies: Mapped[list[str]] = mapped_column(StringList, default=list)
+    skills: Mapped[list[str]] = mapped_column(StringList, default=list)
     impact: Mapped[str | None] = mapped_column(Text, nullable=True)
 
-    embedding: Mapped[list[float]] = mapped_column(Vector(settings.embedding_dim))
+    embedding: Mapped[list[float]] = mapped_column(Embedding(settings.embedding_dim))
 
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now()
@@ -89,11 +88,11 @@ class Preferences(Base):
     max_years: Mapped[int] = mapped_column(Integer, default=1)
     # Extracted seniority levels that are acceptable.
     allowed_seniority: Mapped[list[str]] = mapped_column(
-        ARRAY(String), default=lambda: ["intern", "entry"]
+        StringList, default=lambda: ["intern", "entry"]
     )
     # Any of ingestion.role_family.FAMILIES.
     role_families: Mapped[list[str]] = mapped_column(
-        ARRAY(String), default=lambda: list(DEFAULT_FAMILIES)
+        StringList, default=lambda: list(DEFAULT_FAMILIES)
     )
     # Where you can actually work — a hard filter (see ingestion.relevance).
     # "global" disables geographic filtering entirely.
@@ -101,7 +100,7 @@ class Preferences(Base):
 
     # Soft preferences — these shape ranking (the preference_fit feature) rather
     # than filtering, because a great role in the "wrong" city is still worth seeing.
-    preferred_locations: Mapped[list[str]] = mapped_column(ARRAY(String), default=list)
+    preferred_locations: Mapped[list[str]] = mapped_column(StringList, default=list)
     remote_ok: Mapped[bool] = mapped_column(Boolean, default=True)
 
 
@@ -186,9 +185,9 @@ class JobRequirements(Base):
     job_id: Mapped[int] = mapped_column(
         ForeignKey("jobs.id", ondelete="CASCADE"), primary_key=True
     )
-    required_skills: Mapped[list[str]] = mapped_column(ARRAY(String), default=list)
-    preferred_skills: Mapped[list[str]] = mapped_column(ARRAY(String), default=list)
-    responsibilities: Mapped[list[str]] = mapped_column(ARRAY(String), default=list)
+    required_skills: Mapped[list[str]] = mapped_column(StringList, default=list)
+    preferred_skills: Mapped[list[str]] = mapped_column(StringList, default=list)
+    responsibilities: Mapped[list[str]] = mapped_column(StringList, default=list)
 
     seniority: Mapped[str] = mapped_column(String(40), default="")  # intern|entry|mid|senior|lead
     min_years: Mapped[int] = mapped_column(Integer, default=0)
@@ -210,7 +209,7 @@ class JobEmbedding(Base):
     job_id: Mapped[int] = mapped_column(
         ForeignKey("jobs.id", ondelete="CASCADE"), primary_key=True
     )
-    embedding: Mapped[list[float]] = mapped_column(Vector(settings.embedding_dim))
+    embedding: Mapped[list[float]] = mapped_column(Embedding(settings.embedding_dim))
     source_hash: Mapped[str] = mapped_column(String(64), default="")
 
 
@@ -243,7 +242,7 @@ class Match(Base):
     tier: Mapped[str] = mapped_column(String(20), default="estimated")
 
     # Per-feature breakdown that the UI renders as "why 82%?"
-    why: Mapped[dict] = mapped_column(JSONB, default=dict)
+    why: Mapped[dict] = mapped_column(JSONColumn, default=dict)
     computed_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now()
     )
@@ -264,14 +263,14 @@ class Resume(Base):
 
     headline: Mapped[str] = mapped_column(String(300), default="")
     summary: Mapped[str] = mapped_column(Text, default="")
-    skills: Mapped[list[str]] = mapped_column(ARRAY(String), default=list)
+    skills: Mapped[list[str]] = mapped_column(StringList, default=list)
     # [{section, title, context, date_range, text, source_chunk_ids: [int]}]
-    bullets: Mapped[list] = mapped_column(JSONB, default=list)
+    bullets: Mapped[list] = mapped_column(JSONColumn, default=list)
 
     # {keyword_coverage, matched, missing, parse_ok, warnings[]}
     # For a LaTeX resume this instead holds {latex_sections: [...]}: which
     # sections were rewritten and which were kept because validation failed.
-    ats_report: Mapped[dict] = mapped_column(JSONB, default=dict)
+    ats_report: Mapped[dict] = mapped_column(JSONColumn, default=dict)
     pdf_path: Mapped[str] = mapped_column(String(500), default="")
     # The whole tailored document, when generated from the user's own template.
     # Empty for resumes rendered into our built-in PDF layout.
@@ -375,9 +374,9 @@ class ProjectIdea(Base):
     problem: Mapped[str] = mapped_column(Text, default="")
     what_to_build: Mapped[str] = mapped_column(Text, default="")
     why_it_impresses: Mapped[str] = mapped_column(Text, default="")
-    tech_stack: Mapped[list[str]] = mapped_column(ARRAY(String), default=list)
+    tech_stack: Mapped[list[str]] = mapped_column(StringList, default=list)
     # Skills the job wants that the KB does not yet evidence — the point of the build.
-    covers_gaps: Mapped[list[str]] = mapped_column(ARRAY(String), default=list)
+    covers_gaps: Mapped[list[str]] = mapped_column(StringList, default=list)
     scope: Mapped[str] = mapped_column(String(120), default="")
 
     created_at: Mapped[datetime] = mapped_column(

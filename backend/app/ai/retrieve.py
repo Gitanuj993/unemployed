@@ -4,7 +4,7 @@ Given a job, find the accomplishments actually worth putting on the resume.
 
 Two retrievers, because each fails where the other succeeds:
 
-* **Vector (pgvector cosine)** understands meaning — a chunk saying "built REST
+* **Vector (cosine similarity)** understands meaning — a chunk saying "built REST
   services" matches a JD asking for "backend API development" with no shared words.
   It is bad at exactness: it happily rates "Java" close to "JavaScript".
 * **Lexical (exact term matching)** is the opposite — it never confuses Java with
@@ -21,6 +21,7 @@ import re
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
+from app.ai import vectors
 from app.ai.embeddings import embed_query
 from app.db.models import KBChunk
 
@@ -70,12 +71,14 @@ def _total(db: Session) -> int:
 
 
 def _vector_search(db: Session, query: str, limit: int) -> list[KBChunk]:
-    """Meaning-based arm: nearest chunks by cosine distance in pgvector."""
+    """Meaning-based arm: nearest chunks by cosine similarity.
+
+    An exact scan in numpy rather than a database index — the knowledge base is
+    one person's career, so this ranks tens of rows (see `app.ai.vectors`).
+    """
     qvec = embed_query(query)
-    stmt = (
-        select(KBChunk).order_by(KBChunk.embedding.cosine_distance(qvec)).limit(limit)
-    )
-    return list(db.scalars(stmt))
+    chunks = list(db.scalars(select(KBChunk)))
+    return [chunk for chunk, _ in vectors.rank(qvec, chunks)[:limit]]
 
 
 def _lexical_search(

@@ -13,14 +13,11 @@
   The -ExecutionPolicy flag is in the documented command on purpose: unsigned
   scripts are blocked by default on Windows, and that failure looks like the
   project is broken rather than like a machine setting.
+
+  There is no database to install. The app stores everything in data/jobsearch.db.
 #>
 
-# Deliberately NOT "Stop". In Windows PowerShell, ErrorActionPreference=Stop
-# turns *any* stderr line from a native command into a terminating error - so a
-# harmless "docker: WARNING: No blkio throttle..." kills the script before it
-# does anything. Every native call below is checked by $LASTEXITCODE instead,
-# which is the only thing that actually reports whether the command failed.
-$ErrorActionPreference = "Continue"
+$ErrorActionPreference = "Stop"
 $Root = $PSScriptRoot
 $Backend = Join-Path $Root "backend"
 $Web = Join-Path $Root "web"
@@ -41,9 +38,7 @@ function Need($cmd, $name, $how) {
 
 # --- 1. Prerequisites -------------------------------------------------------
 Say "Checking prerequisites"
-Need "git" "Git" "winget install Git.Git -e"
 Need "node" "Node.js" "winget install OpenJS.NodeJS.LTS -e"
-Need "docker" "Docker Desktop" "winget install Docker.DockerDesktop -e   (then reboot)"
 Need "ollama" "Ollama" "winget install Ollama.Ollama -e"
 
 # Find a usable Python. Bare `python` on Windows is frequently the Microsoft
@@ -62,100 +57,9 @@ if (-not $Python) {
     Write-Host "  Then open a NEW terminal and run this script again."
     exit 1
 }
-Ok "git, node, docker, ollama and $Python all present"
+Ok "node, ollama and $Python all present"
 
-# --- 2. Docker daemon -------------------------------------------------------
-Say "Checking Docker"
-docker info *> $null
-if ($LASTEXITCODE -ne 0) {
-    Ok "Docker isn't running - starting Docker Desktop..."
-    # "Docker Desktop" is not on PATH and is not a registered App Path, so
-    # Start-Process with just that name fails on a completely normal install -
-    # it has to be launched by its real path. Try the common locations; if none
-    # exist, say so instead of silently doing nothing and spending three
-    # minutes waiting for a daemon that will never start.
-    $dockerExe = @(
-        "$env:ProgramFiles\Docker\Docker\Docker Desktop.exe",
-        "${env:ProgramFiles(x86)}\Docker\Docker\Docker Desktop.exe",
-        "$env:LOCALAPPDATA\Docker\Docker Desktop.exe"
-    ) | Where-Object { Test-Path $_ } | Select-Object -First 1
-
-    if (-not $dockerExe) {
-        Write-Host "`nDocker is installed but Docker Desktop.exe could not be found." -ForegroundColor Red
-        Write-Host "  Start Docker Desktop yourself from the Start menu, wait for the whale"
-        Write-Host "  icon to settle, then run this script again."
-        exit 1
-    }
-    Start-Process $dockerExe
-    $waited = 0
-    while ($true) {
-        Start-Sleep -Seconds 5
-        $waited += 5
-        docker info *> $null
-        if ($LASTEXITCODE -eq 0) { break }
-        # A cold launch (Docker Desktop's own process starting, then its Linux
-        # VM, then the daemon inside it) measured at just over 3 minutes on
-        # ordinary hardware, so 180s cut it off moments before it would have
-        # succeeded. 5 minutes gives real headroom without leaving someone
-        # staring at a frozen terminal indefinitely.
-        if ($waited -ge 300) {
-            Write-Host "`nDocker did not start within 3 minutes." -ForegroundColor Red
-            Write-Host "  Open Docker Desktop manually, wait for the whale icon to settle,"
-            Write-Host "  then run this script again. A fresh install needs a reboot first."
-            exit 1
-        }
-    }
-}
-Ok "Docker is ready"
-
-# --- 3. Postgres ------------------------------------------------------------
-Say "Starting Postgres"
-# docker-compose.yml fixes container_name, which is global across the daemon
-# rather than scoped to the compose project - so a second clone of this repo in
-# another folder collides on the name. That container is the database this
-# clone wants anyway (same image, same credentials, same port), so adopt it
-# instead of failing. Only a genuinely broken state should stop us here.
-$running = (docker ps --filter "name=jobsearch-postgres" --format "{{.Names}}" 2>$null | Out-String).Trim()
-if ($running -match "jobsearch-postgres") {
-    Ok "Reusing the jobsearch-postgres container that is already running"
-} else {
-    Push-Location $Root
-    try {
-        $composeOut = docker compose up -d 2>&1 | Out-String
-        if ($LASTEXITCODE -ne 0) {
-            Write-Host $composeOut
-            Write-Host "`nCould not start Postgres." -ForegroundColor Red
-            if ($composeOut -match "already in use by container") {
-                Write-Host "  A stopped jobsearch-postgres container is in the way. Remove it:"
-                Write-Host "    docker rm -f jobsearch-postgres"
-                Write-Host "  Your data lives in a docker volume, not the container, so this is safe."
-            } elseif ($composeOut -match "port is already allocated|bind|5432") {
-                Write-Host "  Port 5432 is already in use - most likely a Postgres installed"
-                Write-Host "  directly on this machine. Stop it, then run this script again."
-            } else {
-                Write-Host "  See the docker output above."
-            }
-            exit 1
-        }
-    } finally { Pop-Location }
-}
-
-# Migrations fail with a confusing connection error if we race the container.
-$waited = 0
-while ($true) {
-    $state = docker inspect -f "{{.State.Health.Status}}" jobsearch-postgres 2>$null
-    if ($state -eq "healthy") { break }
-    Start-Sleep -Seconds 3
-    $waited += 3
-    if ($waited -ge 120) {
-        Write-Host "`nPostgres started but never became healthy." -ForegroundColor Red
-        Write-Host "  Check: docker logs jobsearch-postgres"
-        exit 1
-    }
-}
-Ok "Postgres healthy on 5432"
-
-# --- 4. Model ---------------------------------------------------------------
+# --- 2. Model ---------------------------------------------------------------
 Say "Checking the language model"
 # Ollama normally runs as a background service, but it can be stopped or not
 # yet started after a fresh install - in which case every ollama command fails
@@ -168,9 +72,12 @@ catch {
     while ($true) {
         Start-Sleep -Seconds 2
         $waited += 2
-        try { Invoke-WebRequest "http://localhost:11434/api/version" -UseBasicParsing -TimeoutSec 3 | Out-Null; break } catch { }
+        try {
+            Invoke-WebRequest "http://localhost:11434/api/version" -UseBasicParsing -TimeoutSec 3 | Out-Null
+            break
+        } catch { }
         if ($waited -ge 60) {
-            Write-Host "`nOllama would not start. Open the Ollama app manually, then re-run." -ForegroundColor Red
+            Write-Host "`nOllama would not start. Try running 'ollama serve' yourself." -ForegroundColor Red
             exit 1
         }
     }
@@ -187,16 +94,12 @@ if ($models -notmatch [regex]::Escape($Model)) {
 }
 Ok "$Model ready"
 
-# --- 5. Backend dependencies ------------------------------------------------
+# --- 3. Backend -------------------------------------------------------------
 Say "Preparing the backend"
 if (-not (Test-Path $Venv)) {
     Ok "Creating the virtual environment..."
     Push-Location $Backend
     try { & $Python -m venv .venv } finally { Pop-Location }
-    if (-not (Test-Path $Venv)) {
-        Write-Host "`nCould not create the virtual environment in backend\.venv." -ForegroundColor Red
-        exit 1
-    }
 }
 
 # Cheapest honest check that the install finished: can we import the app?
@@ -211,6 +114,7 @@ if ($LASTEXITCODE -ne 0) {
     }
 }
 
+# Creates data/jobsearch.db on the first run and is a no-op on every one after.
 Ok "Applying database migrations..."
 Push-Location $Backend
 try {
@@ -222,7 +126,7 @@ try {
 } finally { Pop-Location }
 Ok "Backend ready"
 
-# --- 6. Frontend dependencies ----------------------------------------------
+# --- 4. Frontend ------------------------------------------------------------
 Say "Preparing the frontend"
 if (-not (Test-Path (Join-Path $Web "node_modules"))) {
     Ok "Installing npm packages..."
@@ -237,7 +141,7 @@ if (-not (Test-Path (Join-Path $Web "node_modules"))) {
 }
 Ok "Frontend ready"
 
-# --- 7. Start ---------------------------------------------------------------
+# --- 5. Start ---------------------------------------------------------------
 Say "Starting the app"
 
 # Starting a second copy on a taken port produces two windows that die on

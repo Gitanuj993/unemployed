@@ -7,11 +7,10 @@ LLM. Tests 6–11 (document import) need `llama3.2:3b` downloaded.
 
 ## 0. Start everything (3 terminals)
 
-**Terminal A — infra (Docker + Ollama):**
-```bash
-docker compose up -d
-```
-Confirm the model is ready:
+**Terminal A — Ollama:**
+
+There is no database to start: the app uses a SQLite file (`data/jobsearch.db`)
+created by `alembic upgrade head`. Confirm the model is ready:
 ```bash
 ollama list
 ```
@@ -58,7 +57,7 @@ cd web && npm run dev
 - ✅ Ranked results with similarity scores; your portfolio chunk near the top even
   though the wording differs.
 - Now search `marine biology research` → scores should be clearly lower.
-- **Verifies:** embeddings + pgvector cosine retrieval *by meaning*, not keywords.
+- **Verifies:** embeddings + cosine retrieval *by meaning*, not keywords.
 
 ## 5. Delete a chunk  (no LLM)
 - Click **Delete** on any stored chunk.
@@ -444,11 +443,11 @@ cd backend && ./.venv/Scripts/python.exe -m app.eval.run
 ```bash
 docker compose --profile app up -d
 ```
-- ✅ Starts postgres, ollama, api (migrations run automatically), worker (daily
-  ingest + score) and web.
+- ✅ Starts ollama, api (migrations run automatically), worker (daily
+  ingest + score) and web, all sharing the SQLite file on the `appdata` volume.
 - ✅ http://localhost:3000 and http://localhost:8000/health both respond.
-- For day-to-day development keep using `docker compose up -d` (Postgres only)
-  plus native Ollama and the host backend/frontend for hot reload.
+- For day-to-day development use `run.ps1` / `run.sh` instead — no containers
+  at all, and hot reload on both the backend and the frontend.
 
 ---
 
@@ -490,12 +489,12 @@ cd backend && ./.venv/Scripts/python.exe -m app.ingestion.enrich
 
 ## Reset the jobs table (optional — to watch a fresh ingest)
 ```bash
-docker exec jobsearch-postgres psql -U jobsearch -d jobsearch -c "TRUNCATE jobs, ingestion_runs RESTART IDENTITY;"
+sqlite3 data/jobsearch.db "DELETE FROM jobs; DELETE FROM ingestion_runs;"
 ```
 
 ## Reset the KB (optional, to test from a clean slate)
 ```bash
-docker exec jobsearch-postgres psql -U jobsearch -d jobsearch -c "TRUNCATE kb_chunks RESTART IDENTITY;"
+sqlite3 data/jobsearch.db "DELETE FROM kb_chunks;"
 ```
 
 ## Troubleshooting
@@ -505,7 +504,8 @@ docker exec jobsearch-postgres psql -U jobsearch -d jobsearch -c "TRUNCATE kb_ch
   Ollama. Development uses the **native** install on `11434` (`curl http://localhost:11434/api/tags`).
   The `--profile app` container publishes `11435` instead, deliberately, so the two
   never shadow each other — if you're on that path, `OLLAMA_URL` has to say 11435.
-- **`Internal Server Error` on /health:** Postgres container stopped. `docker compose up -d`.
+- **`Internal Server Error` on /health:** the database file is missing or was
+  never migrated. Run `alembic upgrade head` from `backend/`.
 - **A page intermittently 500s** (`Unexpected end of JSON input`): stop the frontend,
   delete `web/.next`, run `npm run dev` again (corrupted dev cache).
 - **First KB action is slow:** the embedding model (~130 MB) loads once, then it's cached.

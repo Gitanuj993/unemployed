@@ -8,24 +8,6 @@
 #   docker compose -f docker-compose.release.yml up -d
 #
 services:
-  postgres:
-    image: pgvector/pgvector:pg16
-    container_name: jobsearch-postgres
-    restart: unless-stopped
-    environment:
-      POSTGRES_USER: jobsearch
-      POSTGRES_PASSWORD: jobsearch
-      POSTGRES_DB: jobsearch
-    ports:
-      - "5432:5432"
-    volumes:
-      - pgdata:/var/lib/postgresql/data
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U jobsearch -d jobsearch"]
-      interval: 5s
-      timeout: 5s
-      retries: 10
-
   ollama:
     image: ollama/ollama:latest
     container_name: jobsearch-ollama
@@ -50,16 +32,14 @@ services:
     image: ${IMAGE_REGISTRY:-ghcr.io/maan-teckwani}/unemployed-api:${IMAGE_TAG:-latest}
     container_name: jobsearch-api
     restart: unless-stopped
-    depends_on:
-      postgres:
-        condition: service_healthy
     environment:
-      DATABASE_URL: postgresql+psycopg://jobsearch:jobsearch@postgres:5432/jobsearch
+      DATABASE_URL: sqlite+pysqlite:////data/jobsearch.db
       OLLAMA_URL: http://ollama:11434
       OLLAMA_MODEL: ${OLLAMA_MODEL:-llama3.2:3b}
     ports:
       - "8000:8000"
     volumes:
+      - appdata:/data
       - generated:/app/generated
     command: >
       sh -c "alembic upgrade head &&
@@ -73,9 +53,11 @@ services:
       api:
         condition: service_started
     environment:
-      DATABASE_URL: postgresql+psycopg://jobsearch:jobsearch@postgres:5432/jobsearch
+      DATABASE_URL: sqlite+pysqlite:////data/jobsearch.db
       OLLAMA_URL: http://ollama:11434
       OLLAMA_MODEL: ${OLLAMA_MODEL:-llama3.2:3b}
+    volumes:
+      - appdata:/data
     command: python -m app.worker.scheduler --daily
 
   web:
@@ -93,8 +75,8 @@ volumes:
   # Named explicitly - see docker-compose.yml for why. The installer always
   # unpacks to a fixed %LOCALAPPDATA%\JobSearchAI, so this isn't live today,
   # but pinning it costs nothing and closes the same hole permanently.
-  pgdata:
-    name: jobsearch_pgdata
+  appdata:
+    name: jobsearch_appdata
   ollamadata:
     name: jobsearch_ollamadata
   generated:

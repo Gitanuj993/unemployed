@@ -8,6 +8,7 @@ from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
+from app.ai import vectors
 from app.ai.embeddings import embed_passage, embed_query
 from app.ai.parse import extract_text
 from app.api import parse_jobs
@@ -73,14 +74,11 @@ def delete_chunk(chunk_id: int, db: Session = Depends(get_db)) -> None:
 def search(q: str, k: int = 5, db: Session = Depends(get_db)) -> list[dict]:
     """Semantic search: embed the query, return the k nearest chunks by meaning."""
     qvec = embed_query(q)
-    distance = KBChunk.embedding.cosine_distance(qvec)
-    rows = db.execute(
-        select(KBChunk, distance.label("distance")).order_by(distance).limit(k)
-    ).all()
+    chunks = list(db.scalars(select(KBChunk)))
     results = []
-    for chunk, dist in rows:
+    for chunk, similarity in vectors.rank(qvec, chunks)[:k]:
         data = KBChunkOut.model_validate(chunk).model_dump()
-        data["similarity"] = round(1.0 - float(dist), 4)  # cosine similarity
+        data["similarity"] = round(similarity, 4)
         results.append(data)
     return results
 
