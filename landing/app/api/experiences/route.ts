@@ -1,4 +1,5 @@
-import { db, recentExperiences, signupIdForClient } from "@/lib/db";
+import { auth } from "@/auth";
+import { db, recentExperiences, signupForGoogleSub } from "@/lib/db";
 import {
   checkCompany,
   checkRole,
@@ -52,6 +53,12 @@ type RoundInput = {
 };
 
 export async function POST(request: Request) {
+  // Same rule as signups: the poster is whoever the session cookie says, not
+  // whoever the request body claims.
+  const session = await auth();
+  const googleSub = session?.user?.id;
+  if (!googleSub) return fail("mustSignIn", 401);
+
   let body: unknown;
   try {
     body = await request.json();
@@ -60,12 +67,8 @@ export async function POST(request: Request) {
   }
   if (typeof body !== "object" || body === null) return fail("generic", 400);
 
-  const { clientId, company: rawCompany, role: rawRole, result, summary: rawSummary, rounds } =
+  const { company: rawCompany, role: rawRole, result, summary: rawSummary, rounds } =
     body as Record<string, unknown>;
-
-  if (typeof clientId !== "string" || clientId.length === 0 || clientId.length > 64) {
-    return fail("generic", 400);
-  }
 
   const { company, problem: companyProblem } = checkCompany(rawCompany);
   if (companyProblem) return fail(companyProblem, 400, "company");
@@ -82,8 +85,11 @@ export async function POST(request: Request) {
   if (roundsCheck.problem) return fail(roundsCheck.problem, 400, "rounds");
 
   try {
-    const signupId = await signupIdForClient(clientId);
-    if (!signupId) return fail("mustJoinWall", 403);
+    // Signed in but never finished a profile: there is no row to attach this
+    // to, and no name or face to show it under.
+    const signup = await signupForGoogleSub(googleSub);
+    if (!signup) return fail("mustJoinWall", 403);
+    const signupId = signup.id;
 
     const sql = db();
 

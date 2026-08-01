@@ -63,13 +63,18 @@ export type ExperienceRow = {
   rounds: ExperienceRound[];
 };
 
-/** The signup id for a browser's client_id, or null if it never joined. */
-export async function signupIdForClient(clientId: string): Promise<string | null> {
+/**
+ * The row a Google account owns, or null if they signed in but never finished
+ * their profile. Signing in and being on the wall are two different things:
+ * the first is Google's answer, the second is a row here.
+ */
+export async function signupForGoogleSub(sub: string): Promise<SignupRow | null> {
   const sql = db();
   const rows = (await sql`
-    select id from signups where client_id = ${clientId} limit 1
-  `) as { id: string }[];
-  return rows[0]?.id ?? null;
+    select id, name, country, gender, seed, created_at
+    from signups where google_sub = ${sub} limit 1
+  `) as SignupRow[];
+  return rows[0] ?? null;
 }
 
 /**

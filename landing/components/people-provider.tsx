@@ -1,10 +1,8 @@
 "use client";
 
-import { createContext, useCallback, useContext, useState, useSyncExternalStore } from "react";
+import { createContext, useCallback, useContext, useState } from "react";
 
 import type { SignupRow } from "@/lib/db";
-
-const STORAGE_KEY = "unemployed:signup";
 
 type PeopleState = {
   /** Joined during this visit. Kept apart from the server's list so the page
@@ -30,33 +28,31 @@ export function useEveryone(fromServer: SignupRow[]): SignupRow[] {
   return [...added, ...fromServer.filter((row) => !seen.has(row.id))];
 }
 
-/** localStorage is state React does not own, so it is read the sanctioned way. */
-const NEVER_CHANGES = () => () => {};
-const hasJoinedBefore = () => localStorage.getItem(STORAGE_KEY) !== null;
-const notOnTheServer = () => false;
-
 /**
- * Holds the one piece of state the whole page shares: did you join, and who
- * arrived while you were looking at it.
+ * Holds the one piece of state the whole page shares: are you on the wall, and
+ * who arrived while you were looking at it.
  *
- * It exists because joining has to change three separate places at once. Your
- * face appears in the crowd behind the headline, your row appears on the wall,
- * and the setup steps unlock. Before this they were three components that each
- * only knew what the server told them at request time, so joining meant
- * reloading the page to see yourself.
+ * `joined` is passed in from the server, which knows the answer because it
+ * knows the session. It used to be read from localStorage, which was a guess
+ * about a different browser's history and could disagree with the database in
+ * both directions - a cleared browser hid a real profile, and a leftover key
+ * offered a post button to someone with no row to post as.
  */
-export function PeopleProvider({ children }: { children: React.ReactNode }) {
+export function PeopleProvider({
+  joined: joinedOnServer = false,
+  children,
+}: {
+  joined?: boolean;
+  children: React.ReactNode;
+}) {
   const [added, setAdded] = useState<SignupRow[]>([]);
 
-  const joinedBefore = useSyncExternalStore(NEVER_CHANGES, hasJoinedBefore, notOnTheServer);
-
   const add = useCallback((row: SignupRow) => {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify({ id: row.id, seed: row.seed }));
     setAdded((prev) => (prev.some((p) => p.id === row.id) ? prev : [row, ...prev]));
   }, []);
 
   return (
-    <PeopleContext value={{ added, joined: added.length > 0 || joinedBefore, add }}>
+    <PeopleContext value={{ added, joined: joinedOnServer || added.length > 0, add }}>
       {children}
     </PeopleContext>
   );

@@ -31,9 +31,12 @@ export function PageNav() {
       }`}
     >
       <nav className="mx-auto flex h-14 w-full max-w-5xl items-center gap-6 px-6">
-        <a href="#top" className="shrink-0 rounded-sm focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:outline-none">
+        {/* Home, not "#top". The nav is on /wall and /experiences too, where an
+            anchor just scrolls the page you are already on and leaves you with
+            no way back to the landing page. */}
+        <Link href="/" className="shrink-0 rounded-sm focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:outline-none">
           <Logo />
-        </a>
+        </Link>
 
         <div className="text-muted-foreground ml-auto hidden items-center gap-6 text-sm sm:flex">
           {copy.nav.links.map((link) => (
@@ -48,7 +51,7 @@ export function PageNav() {
         </div>
 
         <Link
-          href="/wall"
+          href="/join"
           className="border-foreground bg-foreground text-background ml-auto rounded-lg border px-3 py-1.5 text-sm font-medium transition-opacity hover:opacity-85 focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:outline-none sm:ml-0"
         >
           {copy.nav.cta}

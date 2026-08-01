@@ -60,7 +60,7 @@ export function ExperienceWall({ fromServer }: { fromServer: ExperienceRow[] }) 
             ) : (
               <div className="card flex flex-col items-start gap-4">
                 <p className="text-base">{copy.experiences.locked}</p>
-                <Link href="/wall" className="btn-solid">
+                <Link href="/join" className="btn-solid">
                   {copy.join.submit}
                 </Link>
               </div>

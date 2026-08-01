@@ -2,6 +2,7 @@ import { PageNav } from "@/components/page-nav";
 import { PeopleProvider } from "@/components/people-provider";
 import { Wall } from "@/components/wall";
 import { recentSignups, type SignupRow } from "@/lib/db";
+import { viewer } from "@/lib/viewer";
 
 // Read per request, same reasoning as the other pages: nothing here is worth
 // freezing at build time, and the build must not need a database.
@@ -15,11 +16,13 @@ export const dynamic = "force-dynamic";
  * reach. Interview experiences already had their own page; this matches it.
  */
 export default async function WallPage() {
+  const [people, me] = await Promise.all([load(), viewer()]);
+
   return (
-    <PeopleProvider>
+    <PeopleProvider joined={me.signup !== null}>
       <PageNav />
       <main id="top">
-        <Wall fromServer={await load()} initialSeed={crypto.randomUUID().slice(0, 8)} />
+        <Wall fromServer={people} />
       </main>
     </PeopleProvider>
   );

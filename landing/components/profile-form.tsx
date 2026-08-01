@@ -1,94 +1,70 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
+import { useState } from "react";
 
 import { AvatarImage } from "./avatar";
-import { usePeople } from "./people-provider";
 import { COUNTRIES } from "@/lib/countries";
 import { GENDERS, type Gender } from "@/lib/gender-options";
 import { copy } from "@/lib/copy";
-import type { SignupRow } from "@/lib/db";
 
 function newSeed(): string {
   return crypto.randomUUID().slice(0, 8);
 }
 
 /**
- * Name, country, gender, face.
+ * Finish the profile, once Google has said who you are.
  *
- * The avatar appears the moment the form loads rather than after joining, so
- * the reroll button is the thing people play with while deciding. Whichever
- * face is on screen at the moment they join is the one that gets saved.
+ * The name arrives prefilled from the Google account and stays editable. Google
+ * gives a legal-ish full name, which is often not what someone wants on a
+ * public wall, and the column only holds 24 characters anyway.
  *
- * The first seed arrives as a prop from the server rather than being drawn on
- * mount, so the markup React sends and the markup it hydrates are the same.
+ * The face is chosen here rather than derived from the Google picture, because
+ * the whole wall is drawn avatars in one style and a grid of real profile
+ * photos would be a different site. It also means nothing about the account
+ * follows them onto the page.
  */
-export function SignupForm({ initialSeed }: { initialSeed: string }) {
-  const { joined, add } = usePeople();
-  const [name, setName] = useState("");
+export function ProfileForm({
+  defaultName,
+  initialSeed,
+}: {
+  defaultName: string;
+  initialSeed: string;
+}) {
+  const router = useRouter();
+  // Trimmed to the column's limit so the field never starts in an invalid state.
+  const [name, setName] = useState(defaultName.slice(0, 24));
   const [country, setCountry] = useState("IN");
   const [gender, setGender] = useState<Gender>("neutral");
   const [seed, setSeed] = useState(initialSeed);
   const [busy, setBusy] = useState(false);
-  const [error, setError] = useState<{ message: string; field?: string } | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
-  const clientId = useMemo(() => {
-    if (typeof window === "undefined") return null;
-    const existing = localStorage.getItem("unemployed:client");
-    if (existing) return existing;
-    const fresh = crypto.randomUUID();
-    localStorage.setItem("unemployed:client", fresh);
-    return fresh;
-  }, []);
-
-  async function join() {
+  async function submit() {
     setBusy(true);
     setError(null);
     try {
       const res = await fetch("/api/signups", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name, country, gender, seed, clientId }),
+        // No identity in the body. The server reads it from the session.
+        body: JSON.stringify({ name, country, gender, seed }),
       });
       const data = await res.json();
-
       if (!res.ok) {
         const key = data.error as keyof typeof copy.join.errors;
-        setError({ message: copy.join.errors[key] ?? copy.join.errors.generic, field: data.field });
+        setError(copy.join.errors[key] ?? copy.join.errors.generic);
         return;
       }
-
-      // The provider writes localStorage and tells the hero, the counter and
-      // the install steps at once.
-      add(data as SignupRow);
-      setTimeout(() => {
-        document.getElementById("install")?.scrollIntoView({ behavior: "smooth" });
-      }, 100);
+      // The wall is rendered on the server, so a refresh is what makes the new
+      // row appear rather than pushing it into client state.
+      router.push("/wall");
+      router.refresh();
     } catch {
-      setError({ message: copy.join.errors.generic });
+      setError(copy.join.errors.generic);
     } finally {
       setBusy(false);
     }
-  }
-
-  function reset() {
-    localStorage.removeItem("unemployed:signup");
-    window.location.reload();
-  }
-
-  if (joined) {
-    return (
-      <div className="rounded-lg border p-6 text-center">
-        <p className="font-medium">{copy.join.joined}</p>
-        <p className="text-muted-foreground mt-1 text-sm">{copy.join.joinedBody}</p>
-        <button
-          onClick={reset}
-          className="mt-6 text-xs text-muted-foreground hover:text-foreground underline underline-offset-4 focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50 rounded-sm"
-        >
-          Not seeing your avatar? Join again
-        </button>
-      </div>
-    );
   }
 
   return (
@@ -99,7 +75,7 @@ export function SignupForm({ initialSeed }: { initialSeed: string }) {
           <button
             type="button"
             onClick={() => setSeed(newSeed())}
-            className="rounded-md border px-2 py-1 text-xs hover:bg-muted focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50"
+            className="rounded-md border px-2 py-1 text-xs hover:bg-muted focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:outline-none"
           >
             {copy.join.reroll}
           </button>
@@ -116,9 +92,10 @@ export function SignupForm({ initialSeed }: { initialSeed: string }) {
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 placeholder={copy.join.namePlaceholder}
-                maxLength={40}
-                className="h-9 w-full rounded-lg border bg-transparent px-3 text-sm focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50"
+                maxLength={24}
+                className="h-9 w-full rounded-lg border bg-transparent px-3 text-sm focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:outline-none"
               />
+              <p className="text-muted-foreground text-xs">{copy.auth.nameFromGoogle}</p>
             </div>
 
             <div className="space-y-1.5">
@@ -129,7 +106,7 @@ export function SignupForm({ initialSeed }: { initialSeed: string }) {
                 id="country"
                 value={country}
                 onChange={(e) => setCountry(e.target.value)}
-                className="h-9 w-full rounded-lg border bg-transparent px-2 text-sm focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50"
+                className="h-9 w-full rounded-lg border bg-transparent px-2 text-sm focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:outline-none"
               >
                 {COUNTRIES.map((c) => (
                   <option key={c.code} value={c.code}>
@@ -164,15 +141,15 @@ export function SignupForm({ initialSeed }: { initialSeed: string }) {
 
           {error && (
             <p className="rounded-md border px-3 py-2 text-sm font-medium" role="alert">
-              {error.message}
+              {error}
             </p>
           )}
 
           <button
             type="button"
-            onClick={join}
+            onClick={submit}
             disabled={busy || name.trim().length === 0}
-            className="rounded-lg border border-foreground bg-foreground px-4 py-2 text-sm font-medium text-background disabled:opacity-40 focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50"
+            className="rounded-lg border border-foreground bg-foreground px-4 py-2 text-sm font-medium text-background disabled:opacity-40 focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:outline-none"
           >
             {busy ? copy.join.submitting : copy.join.submit}
           </button>

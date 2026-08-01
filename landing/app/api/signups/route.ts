@@ -1,4 +1,5 @@
-import { db, recentSignups, type SignupRow } from "@/lib/db";
+import { auth } from "@/auth";
+import { db, recentSignups, signupForGoogleSub, type SignupRow } from "@/lib/db";
 import { asGenderStrict, checkName, isValidCountry, isValidSeedInput } from "@/lib/validate";
 import { CACHE, CORS, corsOptions } from "@/lib/cors";
 import { ipHash, isUniqueViolation } from "@/lib/ip";
@@ -33,6 +34,13 @@ export async function GET(request: Request) {
 }
 
 export async function POST(request: Request) {
+  // Who you are comes from the session cookie, never from the request body.
+  // The browser gets to choose its display name and its face; it does not get
+  // to choose whose row it is writing.
+  const session = await auth();
+  const googleSub = session?.user?.id;
+  if (!googleSub) return fail("mustSignIn", 401);
+
   let body: unknown;
   try {
     body = await request.json();
@@ -41,7 +49,7 @@ export async function POST(request: Request) {
   }
   if (typeof body !== "object" || body === null) return fail("generic", 400);
 
-  const { name: rawName, country, gender, seed, clientId } = body as Record<string, unknown>;
+  const { name: rawName, country, gender, seed } = body as Record<string, unknown>;
 
   const { name, problem } = checkName(rawName);
   if (problem) return fail(problem, problem === "profane" ? 422 : 400, "name");
@@ -51,7 +59,11 @@ export async function POST(request: Request) {
   if (!chosenGender) return fail("generic", 400, "gender");
   if (!isValidSeedInput(seed)) return fail("generic", 400);
 
-  const client = typeof clientId === "string" && clientId.length <= 64 ? clientId : null;
+  // Signing in again should land you back on your own row rather than being
+  // told you are rate limited, so this is checked before the insert as well as
+  // being caught as a unique violation after it.
+  const already = await signupForGoogleSub(googleSub);
+  if (already) return Response.json(already, { status: 200, headers: CORS });
 
   try {
     const sql = db();
@@ -64,9 +76,9 @@ export async function POST(request: Request) {
         where ip_hash = ${ipHash(request)}
           and created_at > now() - make_interval(mins => ${WINDOW_MINUTES})
       ), inserted as (
-        insert into signups (name, country, gender, seed, ip_hash, client_id)
+        insert into signups (name, country, gender, seed, ip_hash, google_sub)
         select ${name}, ${country.toUpperCase()}, ${chosenGender}, ${seed},
-               ${ipHash(request)}, ${client}
+               ${ipHash(request)}, ${googleSub}
         from recent where n < ${MAX_PER_IP}
         returning id, name, country, gender, seed, created_at
       )
@@ -76,10 +88,10 @@ export async function POST(request: Request) {
     if (rows.length === 0) return fail("rateLimited", 429);
     return Response.json(rows[0], { status: 201, headers: CORS });
   } catch (error) {
-    // Already on the wall from this browser. A double click should look like
-    // success, not like a failure, so hand back the row that already exists.
-    if (isUniqueViolation(error) && client) {
-      const existing = await existingFor(client);
+    // Two tabs submitting at once. A duplicate should look like success, not
+    // like a failure, so hand back the row that already exists.
+    if (isUniqueViolation(error)) {
+      const existing = await signupForGoogleSub(googleSub);
       if (existing) return Response.json(existing, { status: 200, headers: CORS });
     }
     console.error("signup failed", error);
@@ -89,17 +101,4 @@ export async function POST(request: Request) {
 
 function fail(error: string, status: number, field?: string) {
   return Response.json({ error, field }, { status, headers: CORS });
-}
-
-async function existingFor(clientId: string): Promise<SignupRow | null> {
-  try {
-    const sql = db();
-    const rows = (await sql`
-      select id, name, country, gender, seed, created_at
-      from signups where client_id = ${clientId} limit 1
-    `) as SignupRow[];
-    return rows[0] ?? null;
-  } catch {
-    return null;
-  }
 }

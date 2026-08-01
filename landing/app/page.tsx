@@ -8,6 +8,7 @@ import { PageNav } from "@/components/page-nav";
 import { PeopleProvider } from "@/components/people-provider";
 import { Reveal } from "@/components/reveal";
 import { recentSignups, type SignupRow } from "@/lib/db";
+import { viewer } from "@/lib/viewer";
 import { copy } from "@/lib/copy";
 
 // The wall is read per request, so nothing is prerendered and the build never
@@ -24,9 +25,10 @@ export const dynamic = "force-dynamic";
  * Everything below the hero streams: the crowd, the wall and the counts each
  * sit behind Suspense, so a cold Neon delays faces and nothing else.
  */
-export default function Home() {
+export default async function Home() {
+  const me = await viewer();
   return (
-    <PeopleProvider>
+    <PeopleProvider joined={me.signup !== null}>
       <PageNav />
       <main id="top">
         <Hero />
@@ -73,7 +75,7 @@ function Hero() {
         </p>
 
         <div className="mt-11 flex flex-wrap items-center justify-center gap-3">
-          <a href="#install" className="btn-solid">
+          <a href="/join" className="btn-solid">
             {copy.hero.primary}
           </a>
           <a href="#what" className="btn-outline">

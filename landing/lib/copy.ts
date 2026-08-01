@@ -138,6 +138,21 @@ export const copy = {
     },
   },
 
+  auth: {
+    signIn: "Continue with Google",
+    signOut: "Sign out",
+    signInHeading: "Sign in to join the wall.",
+    signInBody:
+      "One tap with Google. No password to make up, and no email from us afterwards.",
+    profileHeading: "Now pick a name and a face.",
+    profileBody:
+      "This is what everyone else sees. Your real name, your email and your Google picture are not stored and never appear on the wall.",
+    nameFromGoogle: "Taken from your Google account. Change it to whatever you want shown.",
+    whyGoogle: "Google is only used to tell two people apart. Nothing is posted on your behalf.",
+    notYou: "Wrong account?",
+    signedInAs: (name: string) => `Signed in as ${name}`,
+  },
+
   join: {
     label: "The wall",
     heading: "Put yourself on the wall.",
@@ -162,6 +177,7 @@ export const copy = {
       tooLong: "Twenty four characters or fewer.",
       profane: "Pick something else.",
       country: "Pick a country.",
+      mustSignIn: "Your sign in expired. Sign in again and retry.",
       rateLimited: "That is a few too many. Try again in ten minutes.",
       generic: "That did not go through. Try again in a moment.",
     },
@@ -237,6 +253,7 @@ export const copy = {
         tooLong: "That's too long.",
         profane: "Pick different words.",
         rounds: "Fill in every round properly.",
+        mustSignIn: "Your sign in expired. Sign in again and retry.",
         mustJoinWall: "Join the wall first, then come back to post.",
         rateLimited: "That's a few too many. Try again later.",
         generic: "That did not go through. Try again in a moment.",

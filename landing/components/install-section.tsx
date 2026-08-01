@@ -165,7 +165,7 @@ function Locked() {
         ))}
       </div>
       <p className="text-base">{copy.install.locked}</p>
-      <a href="/wall" className="btn-solid">
+      <a href="/join" className="btn-solid">
         {copy.join.submit}
       </a>
     </div>
