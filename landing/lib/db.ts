@@ -143,7 +143,7 @@ export async function updateExperience(
   rounds: { round_number: number; round_type: string; description: string; outcome: string }[]
 ): Promise<boolean> {
   const sql = db();
-  const resultRows = await sql`
+  const resultRows = (await sql`
     with updated as (
       update experiences
       set company = ${company}, role = ${role}, result = ${result}, summary = ${summary}
@@ -161,17 +161,17 @@ export async function updateExperience(
       returning experience_id
     )
     select id from updated
-  `;
+  `) as any[];
   return resultRows.length > 0;
 }
 
 export async function deleteExperience(id: string, signupId: string): Promise<boolean> {
   const sql = db();
-  const rows = await sql`
+  const rows = (await sql`
     delete from experiences
     where id = ${id}::bigint and signup_id = ${signupId}::bigint
     returning id
-  `;
+  `) as any[];
   return rows.length > 0;
 }
 
