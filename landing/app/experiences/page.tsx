@@ -13,7 +13,7 @@ export default async function ExperiencesPage() {
 
   return (
     <PeopleProvider joined={me.signup !== null}>
-      <PageNav />
+      <PageNav signedIn={me.signedIn} />
       <main id="top">
         <ExperienceWall fromServer={experiences} />
       </main>

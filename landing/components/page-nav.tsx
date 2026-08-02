@@ -15,7 +15,7 @@ import { copy } from "@/lib/copy";
  * screen. The section links are plain anchors, which means back and forward
  * work and a link to a section is shareable.
  */
-export function PageNav() {
+export function PageNav({ signedIn = false }: { signedIn?: boolean }) {
   const [scrolled, setScrolled] = useState(false);
   const pathname = usePathname();
 
@@ -62,10 +62,10 @@ export function PageNav() {
         </div>
 
         <Link
-          href="/join"
+          href={signedIn ? "/profile" : "/join"}
           className="border-foreground bg-foreground text-background ml-auto rounded-lg border px-3 py-1.5 text-sm font-medium transition-opacity hover:opacity-85 focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:outline-none sm:ml-0"
         >
-          {copy.nav.cta}
+          {signedIn ? "Profile" : copy.nav.cta}
         </Link>
       </nav>
     </header>

@@ -30,7 +30,7 @@ export default async function Home() {
   const me = await viewer();
   return (
     <PeopleProvider joined={me.signup !== null}>
-      <PageNav />
+      <PageNav signedIn={me.signedIn} />
       <main id="top">
         <Hero />
 

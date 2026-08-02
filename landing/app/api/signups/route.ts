@@ -1,5 +1,5 @@
 import { auth } from "@/auth";
-import { db, recentSignups, signupForGoogleSub, type SignupRow } from "@/lib/db";
+import { db, recentSignups, signupForGoogleSub, updateSignup, type SignupRow } from "@/lib/db";
 import { asGenderStrict, checkName, isValidCountry, isValidSeedInput } from "@/lib/validate";
 import { CACHE, CORS, corsOptions } from "@/lib/cors";
 import { ipHash, isUniqueViolation } from "@/lib/ip";
@@ -95,6 +95,39 @@ export async function POST(request: Request) {
       if (existing) return Response.json(existing, { status: 200, headers: CORS });
     }
     console.error("signup failed", error);
+    return fail("generic", 503);
+  }
+}
+
+export async function PUT(request: Request) {
+  const session = await auth();
+  const googleSub = session?.user?.id;
+  if (!googleSub) return fail("mustSignIn", 401);
+
+  let body: unknown;
+  try {
+    body = await request.json();
+  } catch {
+    return fail("generic", 400);
+  }
+  if (typeof body !== "object" || body === null) return fail("generic", 400);
+
+  const { name: rawName, country, gender, seed } = body as Record<string, unknown>;
+
+  const { name, problem } = checkName(rawName);
+  if (problem) return fail(problem, problem === "profane" ? 422 : 400, "name");
+
+  if (!isValidCountry(country)) return fail("country", 400, "country");
+  const chosenGender = asGenderStrict(gender);
+  if (!chosenGender) return fail("generic", 400, "gender");
+  if (!isValidSeedInput(seed)) return fail("generic", 400);
+
+  try {
+    const updated = await updateSignup(googleSub, name, country.toUpperCase(), chosenGender, seed);
+    if (!updated) return fail("notFound", 404);
+    return Response.json(updated, { status: 200, headers: CORS });
+  } catch (error) {
+    console.error("signup update failed", error);
     return fail("generic", 503);
   }
 }

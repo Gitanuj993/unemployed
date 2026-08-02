@@ -20,7 +20,7 @@ export default async function WallPage() {
 
   return (
     <PeopleProvider joined={me.signup !== null}>
-      <PageNav />
+      <PageNav signedIn={me.signedIn} />
       <main id="top">
         <Wall fromServer={people} />
       </main>

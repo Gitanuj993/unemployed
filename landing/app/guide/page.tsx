@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 
 import { PageNav } from "@/components/page-nav";
+import { viewer } from "@/lib/viewer";
 import { InstallSection } from "@/components/install-section";
 import { copy } from "@/lib/copy";
 
@@ -19,12 +20,13 @@ export const metadata: Metadata = {
  * actually involves. The install commands are the thing worth trading a name
  * for, not the advice.
  */
-export default function GuidePage() {
+export default async function GuidePage() {
   const { guide } = copy;
+  const me = await viewer();
 
   return (
     <>
-      <PageNav />
+      <PageNav signedIn={me.signedIn} />
       <main id="top" className="px-6 pt-28 pb-32 md:px-12 lg:px-24">
         <div className="mx-auto w-full max-w-3xl">
           <p className="text-muted-foreground font-mono text-[11px] tracking-[0.2em] uppercase">

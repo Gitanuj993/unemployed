@@ -21,12 +21,28 @@ function emptyRound(): DraftRound {
  * component's: it renders inside a dialog that is only reachable once you have
  * joined, so a second gate here would be dead code behind a locked door.
  */
-export function ExperienceForm({ onPosted }: { onPosted: (experience: ExperienceRow) => void }) {
-  const [company, setCompany] = useState("");
-  const [role, setRole] = useState("");
-  const [result, setResult] = useState<(typeof RESULTS)[number]>("offer");
-  const [summary, setSummary] = useState("");
-  const [rounds, setRounds] = useState<DraftRound[]>([emptyRound()]);
+export function ExperienceForm({
+  onPosted,
+  initialData,
+}: {
+  onPosted: (experience: ExperienceRow) => void;
+  initialData?: ExperienceRow;
+}) {
+  const [company, setCompany] = useState(initialData?.company || "");
+  const [role, setRole] = useState(initialData?.role || "");
+  const [result, setResult] = useState<(typeof RESULTS)[number]>(
+    (initialData?.result as (typeof RESULTS)[number]) || "offer"
+  );
+  const [summary, setSummary] = useState(initialData?.summary || "");
+  const [rounds, setRounds] = useState<DraftRound[]>(
+    initialData?.rounds?.length
+      ? initialData.rounds.map((r) => ({
+          round_type: r.round_type,
+          description: r.description,
+          outcome: r.outcome,
+        }))
+      : [emptyRound()]
+  );
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -43,8 +59,8 @@ export function ExperienceForm({ onPosted }: { onPosted: (experience: Experience
     setBusy(true);
     setError(null);
     try {
-      const res = await fetch("/api/experiences", {
-        method: "POST",
+      const res = await fetch(initialData ? `/api/experiences/${initialData.id}` : "/api/experiences", {
+        method: initialData ? "PUT" : "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ clientId, company, role, result, summary, rounds }),
       });
@@ -57,16 +73,16 @@ export function ExperienceForm({ onPosted }: { onPosted: (experience: Experience
       // The parent closes the dialog and prepends this to the board, so the
       // post is visible immediately without a refetch.
       onPosted({
-        id: String(data.id),
+        id: initialData ? initialData.id : String(data.id),
         company,
         role,
         result,
         summary,
-        created_at: new Date().toISOString(),
-        signup_id: String(data.signup_id),
-        name: data.name,
-        seed: data.seed,
-        gender: data.gender,
+        created_at: initialData ? initialData.created_at : new Date().toISOString(),
+        signup_id: initialData ? initialData.signup_id : String(data.signup_id),
+        name: initialData ? initialData.name : data.name,
+        seed: initialData ? initialData.seed : data.seed,
+        gender: initialData ? initialData.gender : data.gender,
         rounds: rounds.map((r, i) => ({ ...r, round_number: i + 1 })),
       });
     } catch {

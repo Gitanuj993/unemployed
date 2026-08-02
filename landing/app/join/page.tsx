@@ -23,7 +23,7 @@ export default async function JoinPage() {
 
   return (
     <>
-      <PageNav />
+      <PageNav signedIn={signedIn} />
       <main id="top" className="px-6 pt-28 pb-32 md:px-12 lg:px-24">
         <div className="mx-auto w-full max-w-3xl">
           <p className="text-muted-foreground font-mono text-[11px] tracking-[0.2em] uppercase">

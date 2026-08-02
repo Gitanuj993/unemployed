@@ -121,3 +121,57 @@ export async function recentExperiences({
   `;
   return rows as ExperienceRow[];
 }
+
+export async function updateSignup(sub: string, name: string, country: string, gender: string, seed: string): Promise<SignupRow | null> {
+  const sql = db();
+  const rows = (await sql`
+    update signups
+    set name = ${name}, country = ${country}, gender = ${gender}, seed = ${seed}
+    where google_sub = ${sub}
+    returning id, name, country, gender, seed, created_at
+  `) as SignupRow[];
+  return rows[0] ?? null;
+}
+
+export async function updateExperience(
+  id: string,
+  signupId: string,
+  company: string,
+  role: string,
+  result: string,
+  summary: string,
+  rounds: { round_number: number; round_type: string; description: string; outcome: string }[]
+): Promise<boolean> {
+  const sql = db();
+  const resultRows = await sql`
+    with updated as (
+      update experiences
+      set company = ${company}, role = ${role}, result = ${result}, summary = ${summary}
+      where id = ${id}::bigint and signup_id = ${signupId}::bigint
+      returning id
+    ), deleted_rounds as (
+      delete from experience_rounds
+      where experience_id = (select id from updated)
+    ), rounds_inserted as (
+      insert into experience_rounds (experience_id, round_number, round_type, description, outcome)
+      select (select id from updated), r.round_number, r.round_type, r.description, r.outcome
+      from jsonb_to_recordset(${JSON.stringify(rounds)}::jsonb)
+        as r(round_number int, round_type text, description text, outcome text)
+      where exists (select 1 from updated)
+      returning experience_id
+    )
+    select id from updated
+  `;
+  return resultRows.length > 0;
+}
+
+export async function deleteExperience(id: string, signupId: string): Promise<boolean> {
+  const sql = db();
+  const rows = await sql`
+    delete from experiences
+    where id = ${id}::bigint and signup_id = ${signupId}::bigint
+    returning id
+  `;
+  return rows.length > 0;
+}
+

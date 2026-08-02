@@ -27,25 +27,33 @@ function newSeed(): string {
 export function ProfileForm({
   defaultName,
   initialSeed,
+  defaultCountry = "IN",
+  defaultGender = "neutral",
+  isEdit = false,
 }: {
   defaultName: string;
   initialSeed: string;
+  defaultCountry?: string;
+  defaultGender?: Gender;
+  isEdit?: boolean;
 }) {
   const router = useRouter();
   // Trimmed to the column's limit so the field never starts in an invalid state.
   const [name, setName] = useState(defaultName.slice(0, 24));
-  const [country, setCountry] = useState("IN");
-  const [gender, setGender] = useState<Gender>("neutral");
+  const [country, setCountry] = useState(defaultCountry);
+  const [gender, setGender] = useState<Gender>(defaultGender);
   const [seed, setSeed] = useState(initialSeed);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState(false);
 
   async function submit() {
     setBusy(true);
     setError(null);
+    setSuccess(false);
     try {
       const res = await fetch("/api/signups", {
-        method: "POST",
+        method: isEdit ? "PUT" : "POST",
         headers: { "Content-Type": "application/json" },
         // No identity in the body. The server reads it from the session.
         body: JSON.stringify({ name, country, gender, seed }),
@@ -56,10 +64,16 @@ export function ProfileForm({
         setError(copy.join.errors[key] ?? copy.join.errors.generic);
         return;
       }
-      // The install steps are what the user came for, so take them there.
-      // Refresh to ensure server state is updated.
-      router.push("/#install");
-      router.refresh();
+      
+      if (isEdit) {
+        setSuccess(true);
+        setTimeout(() => setSuccess(false), 3000);
+        router.refresh();
+      } else {
+        // The install steps are what the user came for, so take them there.
+        router.push("/#install");
+        router.refresh();
+      }
     } catch {
       setError(copy.join.errors.generic);
     } finally {
@@ -138,6 +152,12 @@ export function ProfileForm({
               </div>
             </fieldset>
           </div>
+
+          {success && (
+            <p className="rounded-md border border-green-500 bg-green-50/10 text-green-600 px-3 py-2 text-sm font-medium" role="alert">
+              Profile updated successfully.
+            </p>
+          )}
 
           {error && (
             <p className="rounded-md border px-3 py-2 text-sm font-medium" role="alert">

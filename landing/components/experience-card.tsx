@@ -19,9 +19,13 @@ import type { ExperienceRow } from "@/lib/db";
 export function ExperienceCard({
   experience,
   collapsible = false,
+  onEdit,
+  onDelete,
 }: {
   experience: ExperienceRow;
   collapsible?: boolean;
+  onEdit?: () => void;
+  onDelete?: () => void;
 }) {
   const [open, setOpen] = useState(!collapsible);
   const [showRounds, setShowRounds] = useState(false);
@@ -122,14 +126,28 @@ export function ExperienceCard({
             <span className="text-muted-foreground text-[11px]">
               {new Date(experience.created_at).toLocaleDateString()}
             </span>
-            <button
-              type="button"
-              onClick={flag}
-              disabled={flagged}
-              className="text-muted-foreground hover:text-foreground text-xs disabled:opacity-50"
-            >
-              {flagged ? copy.experiences.flagged : copy.experiences.flag}
-            </button>
+            <div className="flex items-center gap-4">
+              {onEdit && (
+                <button type="button" onClick={onEdit} className="text-muted-foreground hover:text-foreground text-xs">
+                  Edit
+                </button>
+              )}
+              {onDelete && (
+                <button type="button" onClick={onDelete} className="text-muted-foreground hover:text-destructive text-xs">
+                  Delete
+                </button>
+              )}
+              {!onEdit && !onDelete && (
+                <button
+                  type="button"
+                  onClick={flag}
+                  disabled={flagged}
+                  className="text-muted-foreground hover:text-foreground text-xs disabled:opacity-50"
+                >
+                  {flagged ? copy.experiences.flagged : copy.experiences.flag}
+                </button>
+              )}
+            </div>
           </div>
         </div>
       </div>
