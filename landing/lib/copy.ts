@@ -27,7 +27,7 @@ export const copy = {
   },
 
   hero: {
-    badge: "Free forever. No account. Runs on your laptop.",
+    badge: "Free forever. Runs on your laptop.",
     tagline: "Job hunting is a full time job.",
     taglineEmphasis: "Nobody pays you for it.",
     sub: "So this does the boring half. It finds the roles, scores them against what you have actually done, and writes the resume.",
