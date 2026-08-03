@@ -286,6 +286,23 @@ export const copy = {
     whyGoogle: "Google is only used to tell two people apart. Nothing is posted on your behalf.",
     notYou: "Wrong account?",
     signedInAs: (name: string) => `Signed in as ${name}`,
+
+    // What the roughly one in twenty sees when the sign in does not complete.
+    // The default page for this says "there is a problem with the server
+    // configuration", which is both frightening and, in almost every real case,
+    // wrong: the server is fine and a cookie went missing. These say the true
+    // thing and give them the one action that fixes it.
+    errorHeading: "That did not go through.",
+    errorBody:
+      "Google sent you back, but the browser dropped the cookie that proves the sign in started here. Nothing is wrong with your account, and nothing was saved.",
+    errorRetry: "Try again",
+    errorInApp:
+      "If you opened this from inside another app, Instagram or LinkedIn for instance, open it in your normal browser first. Those built in browsers often block the cookie this needs.",
+    errorStale:
+      "It can also happen if the tab sat for a while before you finished, or if you came back here with the back button. Starting again fixes both.",
+    errorDeniedHeading: "You did not finish at Google.",
+    errorDeniedBody:
+      "The sign in was cancelled on Google's screen, so nothing happened here. You can start again whenever you want.",
   },
 
   join: {

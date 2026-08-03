@@ -18,6 +18,11 @@ import Google from "next-auth/providers/google";
 export const { handlers, signIn, signOut, auth } = NextAuth({
   providers: [Google],
   session: { strategy: "jwt" },
+  // Only the failure destination is overridden. The sign in flow itself is
+  // untouched, because it works: it takes about seventy people an hour and the
+  // handful it loses are losing a cookie, not hitting a misconfigured server.
+  // See app/auth-error/page.tsx.
+  pages: { error: "/auth-error" },
   callbacks: {
     jwt({ token, profile }) {
       // `profile` is only present on the sign-in pass, so the value is copied
