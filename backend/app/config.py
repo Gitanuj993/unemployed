@@ -48,8 +48,9 @@ class Settings(BaseSettings):
     gemini_model: str = "gemini-2.5-flash"
     # ONE embedding model for everything that gets compared (KB + jobs).
     # EMBEDDING_DIM must match the model's output size.
-    embedding_model: str = "BAAI/bge-small-en-v1.5"
-    embedding_dim: int = 384
+    ##embedding_model: str = "BAAI/bge-small-en-v1.5"
+   ## embedding_dim: int = 384
+    embedding_model: str = "gemini-embedding-001"
 
     # How long a generated resume is kept before it is deleted, with its PDF.
     # Resumes are derived from the knowledge base and the job, both of which are
