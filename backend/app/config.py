@@ -51,6 +51,7 @@ class Settings(BaseSettings):
     ##embedding_model: str = "BAAI/bge-small-en-v1.5"
    ## embedding_dim: int = 384
     embedding_model: str = "gemini-embedding-001"
+    embedding_dim: int = 768
 
     # How long a generated resume is kept before it is deleted, with its PDF.
     # Resumes are derived from the knowledge base and the job, both of which are
