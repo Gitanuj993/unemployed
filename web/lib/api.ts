@@ -1,5 +1,5 @@
 // Typed client for the FastAPI backend. One place that knows the API shape.
-const BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
+const BASE = process.env.NEXT_PUBLIC_API_URL ?? "https://unemployed-backend.onrender.com";
 
 export type KBChunk = {
   id: number;
