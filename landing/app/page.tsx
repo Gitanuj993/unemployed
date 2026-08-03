@@ -8,7 +8,7 @@ import { Logo } from "@/components/logo";
 import { PageNav } from "@/components/page-nav";
 import { PeopleProvider } from "@/components/people-provider";
 import { Reveal } from "@/components/reveal";
-import { recentSignups, type SignupRow } from "@/lib/db";
+import { crowdPage, type CrowdPage, type SignupRow } from "@/lib/db";
 import { viewer } from "@/lib/viewer";
 import { copy } from "@/lib/copy";
 
@@ -32,7 +32,7 @@ export default async function Home() {
     <PeopleProvider joined={me.signup !== null}>
       <PageNav signedIn={me.signedIn} />
       <main id="top">
-        <Hero />
+        <Hero me={me.signup} />
 
         <Story />
 
@@ -52,11 +52,11 @@ export default async function Home() {
 
 /* -------------------------------------------------------------------------- */
 
-function Hero() {
+function Hero({ me }: { me: SignupRow | null }) {
   return (
     <section className="relative flex min-h-[100svh] flex-col items-center justify-center overflow-hidden px-6 md:px-12 lg:px-24 pt-24 pb-12 text-center">
       <Suspense fallback={null}>
-        <HeroCrowd />
+        <HeroCrowd me={me} />
       </Suspense>
 
       <div className="relative z-10 flex max-w-2xl flex-col items-center">
@@ -245,30 +245,19 @@ function Footer() {
 
 /* -------------------------------------------------------------------------- */
 
-async function HeroCrowd() {
-  return <HeroBoard fromServer={await people()} />;
+async function HeroCrowd({ me }: { me: SignupRow | null }) {
+  return <HeroBoard page={await crowd()} me={me} />;
 }
 
 async function HeroCount() {
-  const everyone = await people();
-  return <HeroCountLine fromServer={everyone} />;
+  return <HeroCountLine total={(await crowd()).total} />;
 }
 
 /**
  * One read per request, shared by the hero crowd and the counter. The wall
  * itself lives at /wall now and does its own read.
- *
- * An unreachable database returns an empty list rather than throwing: the page
- * is still worth reading without the faces on it.
  */
-const people = cache(async (): Promise<SignupRow[]> => {
-  try {
-    return await recentSignups(200);
-  } catch (error) {
-    console.error("wall unavailable", error);
-    return [];
-  }
-});
+const crowd = cache((): Promise<CrowdPage> => crowdPage());
 
 /* -------------------------------------------------------------------------- */
 

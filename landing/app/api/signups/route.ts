@@ -1,5 +1,5 @@
 import { auth } from "@/auth";
-import { db, recentSignups, signupForGoogleSub, updateSignup, type SignupRow } from "@/lib/db";
+import { countSignups, db, recentSignups, signupForGoogleSub, updateSignup, type SignupRow } from "@/lib/db";
 import { asGenderStrict, checkName, isValidCountry, isValidSeedInput } from "@/lib/validate";
 import { CACHE, CORS, corsOptions } from "@/lib/cors";
 import { ipHash, isUniqueViolation } from "@/lib/ip";
@@ -18,13 +18,35 @@ export async function OPTIONS() {
   return corsOptions();
 }
 
+/**
+ * One page of the wall, plus how many people are on it.
+ *
+ * `count` is the whole wall, not the length of `signups`. It used to be the
+ * latter, which meant the number on the page was really the page size: at two
+ * hundred rows and climbing, every reader was told there were exactly two
+ * hundred of them.
+ *
+ * `nextCursor` is null when this is the last page. Callers pass it back as
+ * `?cursor=` and are not expected to look inside it.
+ */
 export async function GET(request: Request) {
-  const limit = readLimit(new URL(request.url).searchParams, { fallback: 200, max: 500 });
+  const params = new URL(request.url).searchParams;
+  const limit = readLimit(params, { fallback: 200, max: 500 });
+  const cursor = params.get("cursor");
 
   try {
-    const signups = await recentSignups(limit);
+    const [signups, count] = await Promise.all([
+      recentSignups(limit, cursor),
+      countSignups(),
+    ]);
     return Response.json(
-      { count: signups.length, signups },
+      {
+        count,
+        signups,
+        // A short page is the end of the wall. A full one might not be, so it
+        // carries a cursor and the next request finds out.
+        nextCursor: signups.length === limit ? (signups[signups.length - 1]?.id ?? null) : null,
+      },
       { headers: { ...CORS, ...CACHE } },
     );
   } catch (error) {

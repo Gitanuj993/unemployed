@@ -28,16 +28,81 @@ export type SignupRow = {
   created_at: string;
 };
 
-/** Newest first. Returns an empty list rather than throwing when Neon is down. */
-export async function recentSignups(limit = 200): Promise<SignupRow[]> {
+/**
+ * Newest first, one page at a time.
+ *
+ * `after` is the id of the last row of the previous page. Paging by a key
+ * rather than by `offset` matters here because people join while you are
+ * scrolling: an offset of 200 means something different a minute later, so the
+ * next page would repeat faces and skip others. A key means "everything older
+ * than this row", which stays true no matter who joins in between.
+ *
+ * The cursor is only an id, but the sort is `created_at desc, id desc`, so the
+ * subquery looks the row's timestamp back up rather than making the caller
+ * carry it. An id that no longer exists makes the comparison null, which ends
+ * the paging quietly instead of erroring.
+ */
+export async function recentSignups(limit = 200, after?: string | null): Promise<SignupRow[]> {
   const sql = db();
+  const cursor = after ?? null;
   const rows = await sql`
     select id, name, country, gender, seed, created_at
     from signups
-    order by created_at desc
+    where ${cursor}::bigint is null
+       or (created_at, id) < (
+            (select created_at from signups where id = ${cursor}::bigint),
+            ${cursor}::bigint
+          )
+    order by created_at desc, id desc
     limit ${limit}
   `;
   return rows as SignupRow[];
+}
+
+/**
+ * How many people are on the wall, which is not the same as how many were sent
+ * to the browser. The page ships one page of faces and this number, so the
+ * count is the truth even when the wall has more people on it than any one
+ * request would ever load.
+ */
+export async function countSignups(): Promise<number> {
+  const sql = db();
+  const rows = (await sql`select count(*)::int as total from signups`) as { total: number }[];
+  return rows[0]?.total ?? 0;
+}
+
+/** What a page that draws faces needs: some of the wall, and the size of it. */
+export type CrowdPage = {
+  people: SignupRow[];
+  /** Everyone on the wall, not everyone in `people`. */
+  total: number;
+  /** Passed back as `?cursor=` for the next page. Null when there is no next page. */
+  cursor: string | null;
+};
+
+/** How many faces the server sends before the browser has to ask for more. */
+export const CROWD_PAGE = 200;
+
+/**
+ * The first page of the wall and the real headcount, for the hero and for the
+ * wall page.
+ *
+ * An unreachable database is an empty wall rather than an error page: the rest
+ * of the page is still worth reading without the faces on it, which is the same
+ * call every other read here makes.
+ */
+export async function crowdPage(): Promise<CrowdPage> {
+  try {
+    const [people, total] = await Promise.all([recentSignups(CROWD_PAGE), countSignups()]);
+    return {
+      people,
+      total,
+      cursor: people.length === CROWD_PAGE ? (people[people.length - 1]?.id ?? null) : null,
+    };
+  } catch (error) {
+    console.error("wall unavailable", error);
+    return { people: [], total: 0, cursor: null };
+  }
 }
 
 export type ExperienceRound = {

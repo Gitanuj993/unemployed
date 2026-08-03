@@ -1,7 +1,7 @@
 import { PageNav } from "@/components/page-nav";
 import { PeopleProvider } from "@/components/people-provider";
 import { Wall } from "@/components/wall";
-import { recentSignups, type SignupRow } from "@/lib/db";
+import { crowdPage } from "@/lib/db";
 import { viewer } from "@/lib/viewer";
 
 // Read per request, same reasoning as the other pages: nothing here is worth
@@ -16,24 +16,14 @@ export const dynamic = "force-dynamic";
  * reach. Interview experiences already had their own page; this matches it.
  */
 export default async function WallPage() {
-  const [people, me] = await Promise.all([load(), viewer()]);
+  const [page, me] = await Promise.all([crowdPage(), viewer()]);
 
   return (
     <PeopleProvider joined={me.signup !== null}>
       <PageNav signedIn={me.signedIn} />
       <main id="top">
-        <Wall fromServer={people} />
+        <Wall page={page} me={me.signup} />
       </main>
     </PeopleProvider>
   );
-}
-
-/** An unreachable database shows an empty wall rather than an error page. */
-async function load(): Promise<SignupRow[]> {
-  try {
-    return await recentSignups(200);
-  } catch (error) {
-    console.error("wall unavailable", error);
-    return [];
-  }
 }

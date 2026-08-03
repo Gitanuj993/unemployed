@@ -20,14 +20,6 @@ const PeopleContext = createContext<PeopleState>({
 
 export const usePeople = () => useContext(PeopleContext);
 
-/** Whether anything is combined with the server list, in one place. */
-export function useEveryone(fromServer: SignupRow[]): SignupRow[] {
-  const { added } = usePeople();
-  if (added.length === 0) return fromServer;
-  const seen = new Set(added.map((row) => row.id));
-  return [...added, ...fromServer.filter((row) => !seen.has(row.id))];
-}
-
 /**
  * Holds the one piece of state the whole page shares: are you on the wall, and
  * who arrived while you were looking at it.

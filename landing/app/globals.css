@@ -232,25 +232,101 @@
   transform: none;
 }
 
-/* The crowd behind the headline. Positions come from the component, since they
-   are derived from each person's seed. */
+/* The crowd behind the headline. One continuous grid you drag sideways, rather
+   than a screenful of faces scattered by hash: a scatter reads as a crowd at
+   twenty seven people and as a mess at a thousand, and it can only ever show
+   the handful that fit. */
 .hero-board {
   position: absolute;
   inset: 0;
-  overflow: hidden;
-  pointer-events: none;
-  /* Only the outer edge is softened. The copy is kept clear by placement rather
-     than by masking, so faces stay legible everywhere else. */
+  overflow-x: auto;
+  overflow-y: hidden;
+  /* Dragging to the end of the crowd must not trigger the browser's back
+     gesture, which would leave the page mid drag. */
+  overscroll-behavior-x: contain;
+  scrollbar-width: none;
+  cursor: grab;
+  user-select: none;
+  /* The centre is masked rather than kept clear by placement. That is what lets
+     this be one surface that scrolls as a whole instead of two gutters that
+     would have to scroll in opposite directions to stay symmetric. Faces pass
+     behind the copy and out the other side as you drag. */
   mask-image:
-    linear-gradient(to bottom, transparent, black 12%, black 88%, transparent),
-    linear-gradient(to right, transparent, black 8%, black 92%, transparent);
+    linear-gradient(
+      to right,
+      transparent,
+      black 7%,
+      black 22%,
+      transparent 31%,
+      transparent 69%,
+      black 78%,
+      black 93%,
+      transparent
+    ),
+    linear-gradient(to bottom, transparent, black 10%, black 90%, transparent);
   mask-composite: intersect;
 }
 
+.hero-board::-webkit-scrollbar {
+  display: none;
+}
+
+.hero-board[data-panning="true"] {
+  cursor: grabbing;
+}
+
+.hero-board__grid {
+  --rows: 6;
+  --face: 64px;
+  display: grid;
+  /* Column by column, so a face and the one after it are neighbours vertically
+     and the crowd grows to the right as more of it loads. */
+  grid-auto-flow: column;
+  grid-template-rows: repeat(var(--rows), var(--face));
+  grid-auto-columns: var(--face);
+  align-content: center;
+  gap: 1.5rem 1.25rem;
+  height: 100%;
+  width: max-content;
+  /* The first face is you when you are signed in, so it has to start inside the
+     visible left band rather than under the fade at the very edge. */
+  padding-inline: 11vw 8vw;
+}
+
+/* Narrower than this and there are no gutters to put anyone in: the copy column
+   is 42rem, so anything under about 64rem has faces sitting on the headline.
+   The crowd becomes two full width rows instead, one above the copy and one
+   below it, panning exactly the same way. The bands are pixel sized rather than
+   percentages so they hold their ground on a short phone as well as a tall one. */
+@media (max-width: 1023px) {
+  .hero-board {
+    mask-image:
+      linear-gradient(
+        to bottom,
+        black 0 8.25rem,
+        transparent 8.25rem,
+        transparent calc(100% - 7.75rem),
+        black calc(100% - 7.75rem)
+      ),
+      linear-gradient(to right, transparent, black 8%, black 92%, transparent);
+  }
+
+  .hero-board__grid {
+    --rows: 2;
+    --face: 48px;
+    /* The rows are pushed to the two bands, which is where the mask lets them
+       through. The padding keeps the top row clear of the fixed nav and the
+       bottom row clear of the scroll hint. */
+    align-content: space-between;
+    gap: 0 0.85rem;
+    padding: 4.5rem 12vw 3.5rem;
+  }
+}
+
 .hero-board__face {
-  position: absolute;
-  translate: -50% -50%;
-  pointer-events: auto;
+  position: relative;
+  width: var(--face);
+  height: var(--face);
   opacity: 0;
   animation: face-in 0.7s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
@@ -262,6 +338,9 @@
   border-radius: 9999px;
   border: 1px solid var(--border);
   background: var(--background);
+  /* Present enough to read as a crowd, quiet enough that the headline still
+     wins. Hover takes whichever one you point at to full. */
+  opacity: 0.6;
   transition:
     opacity 0.25s ease,
     transform 0.25s cubic-bezier(0.16, 1, 0.3, 1);
@@ -272,8 +351,33 @@
 }
 
 .hero-board__face:hover img {
-  opacity: 1 !important;
+  opacity: 1;
   transform: scale(1.25);
+}
+
+/* You, in the crowd. Full strength and labelled, because finding yourself in it
+   is the whole reward for joining. */
+.hero-board__face[data-me] img {
+  opacity: 1;
+  border-color: var(--foreground);
+  box-shadow: 0 0 0 2px var(--background), 0 0 0 3px var(--foreground);
+}
+
+.hero-board__you {
+  position: absolute;
+  top: -0.5rem;
+  left: 50%;
+  translate: -50% 0;
+  padding: 0.05rem 0.4rem;
+  border-radius: 9999px;
+  background: var(--foreground);
+  color: var(--background);
+  font-size: 0.6rem;
+  font-weight: 600;
+  line-height: 1.5;
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+  z-index: 6;
 }
 
 .hero-board__name {
@@ -303,6 +407,98 @@
 
 .hero-board__face:hover .hero-board__name {
   opacity: 1;
+}
+
+/* ---------------------------------------------------------------------------
+   The wall itself, at /wall.
+   A window onto a surface bigger than the window, in both directions. A single
+   column of a thousand faces is a scrollbar you give up on; a roughly square
+   wall you move around is a wall.
+   --------------------------------------------------------------------------- */
+.wall-canvas {
+  height: clamp(420px, 72svh, 760px);
+  overflow: auto;
+  /* Reaching the bottom of the wall should not carry on and scroll the page. */
+  overscroll-behavior: contain;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  background: var(--background);
+  cursor: grab;
+  user-select: none;
+  scrollbar-width: thin;
+}
+
+.wall-canvas[data-panning="true"] {
+  cursor: grabbing;
+}
+
+.wall-canvas:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px color-mix(in oklab, var(--ring) 50%, transparent);
+}
+
+.wall-grid {
+  --tile: 104px;
+  display: grid;
+  /* Column count comes from the total, not from how many rows have loaded, so
+     later pages extend the wall downward instead of moving every face already
+     under your cursor. */
+  grid-template-columns: repeat(var(--cols), var(--tile));
+  gap: 0.5rem;
+  padding: 1.25rem;
+  width: max-content;
+}
+
+@media (max-width: 640px) {
+  .wall-grid {
+    --tile: 86px;
+    gap: 0.25rem;
+    padding: 0.75rem;
+  }
+}
+
+.wall-tile {
+  display: flex;
+  width: 100%;
+  flex-direction: column;
+  align-items: center;
+  border-radius: var(--radius-lg);
+  padding: 0.5rem;
+  text-align: center;
+  transition: background-color 0.2s ease;
+}
+
+.wall-tile:hover {
+  background: color-mix(in oklab, var(--muted) 60%, transparent);
+}
+
+.wall-tile__face {
+  position: relative;
+  display: block;
+  line-height: 0;
+}
+
+/* You, pinned to the front of the wall. First tile, marked, so the wall opens
+   on you rather than making you hunt for yourself. */
+.wall-tile[data-me] {
+  background: color-mix(in oklab, var(--muted) 70%, transparent);
+  box-shadow: inset 0 0 0 1px var(--foreground);
+}
+
+.wall-tile__you {
+  position: absolute;
+  bottom: -0.35rem;
+  left: 50%;
+  translate: -50% 0;
+  padding: 0.05rem 0.4rem;
+  border-radius: 9999px;
+  background: var(--foreground);
+  color: var(--background);
+  font-size: 0.6rem;
+  font-weight: 600;
+  line-height: 1.5;
+  letter-spacing: 0.04em;
+  white-space: nowrap;
 }
 
 @keyframes face-in {

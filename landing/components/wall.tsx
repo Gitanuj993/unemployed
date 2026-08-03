@@ -5,10 +5,12 @@ import Link from "next/link";
 
 import { AvatarImage } from "./avatar";
 import { PersonExperiences } from "./person-experiences";
-import { useEveryone, usePeople } from "./people-provider";
+import { usePeople } from "./people-provider";
+import { useCrowd, useLoadOnApproach } from "./use-crowd";
+import { usePan } from "./use-pan";
 import { countryName } from "@/lib/countries";
 import { copy } from "@/lib/copy";
-import type { SignupRow } from "@/lib/db";
+import type { CrowdPage, SignupRow } from "@/lib/db";
 
 /**
  * Everyone on the wall, and a way in for anyone not on it yet.
@@ -21,10 +23,13 @@ import type { SignupRow } from "@/lib/db";
  * Each face is a button rather than a link: selecting someone opens their
  * interview experiences here instead of navigating away.
  */
-export function Wall({ fromServer }: { fromServer: SignupRow[] }) {
-  const people = useEveryone(fromServer);
+export function Wall({ page, me }: { page: CrowdPage; me: SignupRow | null }) {
   const { joined } = usePeople();
   const [selected, setSelected] = useState<SignupRow | null>(null);
+  const { people, total, loading, done, loadMore } = useCrowd(page, me);
+
+  const surface = usePan<HTMLDivElement>();
+  const onScroll = useLoadOnApproach(surface, "y", { done, loadMore, count: people.length });
 
   return (
     <>
@@ -63,30 +68,57 @@ export function Wall({ fromServer }: { fromServer: SignupRow[] }) {
             <p className="text-muted-foreground text-sm">{copy.wall.empty}</p>
           ) : (
             <>
+              {/* The count is the whole wall. The faces below it are however
+                  many have been fetched so far, which is a different number and
+                  always will be once the wall outgrows one request. */}
               <p className="text-muted-foreground mb-6 text-sm">
-                {copy.wall.caption(people.length)}{" "}
+                {copy.wall.caption(total)}{" "}
                 <span className="text-muted-foreground/70">{copy.wall.tapHint}</span>
               </p>
-              <ul className="grid grid-cols-3 gap-x-4 gap-y-6 sm:grid-cols-5">
-                {people.map((person) => (
-                  <li key={person.id}>
-                    <button
-                      type="button"
-                      onClick={() => setSelected(person)}
-                      aria-label={copy.wall.personAria(person.name)}
-                      className="hover:bg-muted/60 flex w-full flex-col items-center rounded-lg p-2 text-center transition-colors focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:outline-none"
-                    >
-                      <AvatarImage seed={person.seed} gender={person.gender} />
-                      <span className="mt-2 w-full truncate text-xs font-medium">
-                        {person.name}
-                      </span>
-                      <span className="text-muted-foreground w-full truncate text-[11px]">
-                        {countryName(person.country)}
-                      </span>
-                    </button>
-                  </li>
-                ))}
-              </ul>
+
+              <div
+                ref={surface}
+                onScroll={onScroll}
+                className="wall-canvas"
+                tabIndex={0}
+                role="group"
+                aria-label={copy.wall.heading}
+              >
+                <ul
+                  className="wall-grid"
+                  style={{ "--cols": columnsFor(total) } as React.CSSProperties}
+                >
+                  {people.map((person) => {
+                    const isMe = me !== null && person.id === me.id;
+                    return (
+                      <li key={person.id}>
+                        <button
+                          type="button"
+                          onClick={() => setSelected(person)}
+                          aria-label={copy.wall.personAria(person.name)}
+                          className="wall-tile focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:outline-none"
+                          data-me={isMe || undefined}
+                        >
+                          <span className="wall-tile__face">
+                            <AvatarImage seed={person.seed} gender={person.gender} />
+                            {isMe && <span className="wall-tile__you">{copy.wall.you}</span>}
+                          </span>
+                          <span className="mt-2 w-full truncate text-xs font-medium">
+                            {person.name}
+                          </span>
+                          <span className="text-muted-foreground w-full truncate text-[11px]">
+                            {countryName(person.country)}
+                          </span>
+                        </button>
+                      </li>
+                    );
+                  })}
+                </ul>
+              </div>
+
+              <p className="text-muted-foreground mt-3 text-xs">
+                {loading ? copy.wall.loadingMore : copy.wall.dragHint}
+              </p>
             </>
           )}
         </div>
@@ -95,4 +127,16 @@ export function Wall({ fromServer }: { fromServer: SignupRow[] }) {
       <PersonExperiences person={selected} onClose={() => setSelected(null)} />
     </>
   );
+}
+
+/**
+ * How wide the wall is, in faces.
+ *
+ * Roughly square, so a wall of a thousand runs off the screen in both
+ * directions rather than being one very long column. Derived from the total
+ * rather than from how many rows have loaded, so later pages extend the wall
+ * downward instead of reflowing every face already on screen.
+ */
+function columnsFor(total: number): number {
+  return Math.min(36, Math.max(8, Math.ceil(Math.sqrt(total * 1.4))));
 }
