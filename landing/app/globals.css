@@ -323,6 +323,15 @@
   }
 }
 
+/* Once the crowd loops, the run is preceded by a repeat of its own end, so the
+   inset that held the opening face clear of the fade has to go. An empty gap
+   there would be the one stretch of the surface that did not repeat, and it
+   would flicker into and out of faces every time the loop came round. Declared
+   after the narrow screen rules so it wins on both. */
+.hero-board__grid--looping {
+  padding-left: 0;
+}
+
 .hero-board__face {
   position: relative;
   width: var(--face);
