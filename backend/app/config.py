@@ -39,12 +39,13 @@ class Settings(BaseSettings):
     database_url: str = f"sqlite+pysqlite:///{DB_PATH.as_posix()}"
     # A native Ollama install (the documented setup) owns 11434. The optional
     # docker-compose Ollama publishes 11435 so the two can coexist.
-    ollama_url: str = "http://localhost:11434"
+   # ollama_url: str = "http://localhost:11434"
     # Local LLM for extraction (and later resume generation). Small + fast by
     # default; the review step catches any mistakes. For higher quality set
     # OLLAMA_MODEL=llama3.1:8b (larger download, slower on CPU).
-    ollama_model: str = "llama3.2:3b"
-
+    #ollama_model: str = "llama3.2:3b"
+    gemini_api_key: str 
+    gemini_model: str = "gemini-2.5-flash"
     # ONE embedding model for everything that gets compared (KB + jobs).
     # EMBEDDING_DIM must match the model's output size.
     embedding_model: str = "BAAI/bge-small-en-v1.5"
