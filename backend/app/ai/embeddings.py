@@ -27,6 +27,4 @@ def embed_query(text: str) -> list[float]:
     )
 
     return response.embeddings[0].values  
-    """Embed a search query (or a job description). With instruction prefix."""
-    vec = _model().encode(_QUERY_INSTRUCTION + text, normalize_embeddings=True)
-    return vec.tolist()
+    
