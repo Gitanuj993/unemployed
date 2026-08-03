@@ -40,3 +40,6 @@ fpdf2>=2.8.2
 
 # Tests
 pytest>=8.3.4
+
+# gemini ask
+google-genai>=1.0.0
