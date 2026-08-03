@@ -51,8 +51,9 @@ app = FastAPI(title="AI Career Assistant", version="0.1.0", lifespan=lifespan)
 # boundary - not being reachable off this machine is.
 app.add_middleware(
     CORSMiddleware,
-    allow_origin_regex=r"http://(localhost|127\.0\.0\.1)(:\d+)?",
+    allow_origins=["https://unemployed-front.onrender.com"],
     allow_methods=["*"],
+    allow_credentials=True,
     allow_headers=["*"],
 )
 
