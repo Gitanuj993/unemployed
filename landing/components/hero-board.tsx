@@ -1,7 +1,7 @@
 "use client";
 
 import { avatarSrc } from "./avatar";
-import { useCrowd, useLoadOnApproach } from "./use-crowd";
+import { useCrowd } from "./use-crowd";
 import { useDrift } from "./use-drift";
 import { usePan } from "./use-pan";
 import { countryName } from "@/lib/countries";
@@ -17,8 +17,8 @@ import type { CrowdPage, SignupRow } from "@/lib/db";
  * It used to scatter faces by hashing their seed. That read as a crowd at
  * twenty seven people and as a mess at a thousand, and it could only ever show
  * the handful that fitted the screen. It is a grid now, laid out column by
- * column, and it drifts sideways on its own so the whole wall eventually walks
- * past you. Hovering a face stops it, and it can still be dragged.
+ * column, and it drifts sideways on its own. Hovering a face stops it, and it
+ * can still be dragged.
  *
  * The middle of the hero is masked out rather than kept empty by placement.
  * That is what lets the grid be one continuous surface instead of two separate
@@ -26,9 +26,27 @@ import type { CrowdPage, SignupRow } from "@/lib/db";
  */
 
 /**
+ * How many people the hero shows before it starts repeating them.
+ *
+ * This is a cost limit, not a design one. Every face is an image request, and
+ * the drift pulls a new column into view roughly every two and a half seconds,
+ * so a hero that walked the whole wall charged about two and a quarter requests
+ * per second for as long as a tab stayed open. Ninety seconds of that was three
+ * hundred requests from one reader, and it grew with the wall.
+ *
+ * Capping it makes the cost converge instead. The loop repeats the same faces,
+ * the browser already has them, and once the first lap is done an idle tab costs
+ * nothing at all. A hundred and eighty is thirty columns, so a lap takes about
+ * eighty seconds. Everyone, genuinely everyone, is still on /wall.
+ *
+ * It has to divide by LOOP_ROWS.
+ */
+const HERO_CROWD = 180;
+
+/**
  * How many faces are repeated after the last one so the loop has somewhere to
- * land. It only has to outrun the widest screen this will be read on: at six
- * rows that is forty columns, which is wider than any of them.
+ * land. It only has to outrun the widest screen this will be read on, and it
+ * cannot be longer than the run it repeats.
  */
 const LOOP_LEAD = 240;
 
@@ -52,18 +70,23 @@ const LOOP_TAIL = 12;
 const LOOP_ROWS = 6;
 
 export function HeroBoard({ page, me }: { page: CrowdPage; me: SignupRow | null }) {
-  const { people, done, loadMore } = useCrowd(page, me);
+  const { people } = useCrowd(page, me);
 
   const surface = usePan<HTMLDivElement>();
-  const onScroll = useLoadOnApproach(surface, "x", { done, loadMore, count: people.length });
 
-  // The repeats are only laid down once there is nothing left to fetch. Adding
-  // them earlier would put a copy of the opening faces in the middle of the
-  // crowd, between what has loaded and what has not.
-  const looping = done && people.length >= LOOP_LEAD + LOOP_TAIL;
-  const run = looping ? people.slice(0, people.length - (people.length % LOOP_ROWS)) : people;
+  // The hero no longer asks for more people as it travels. One page from the
+  // server is already more than it shows, so paging here only ever bought
+  // faces that cost a request each and then scrolled away.
+  const crowd = people.slice(0, HERO_CROWD);
+
+  // The repeats need a run long enough to cover the screen, since the whole
+  // point of the one after the end is to have somewhere to land.
+  const looping = crowd.length >= HERO_CROWD;
+  const run = looping ? crowd.slice(0, crowd.length - (crowd.length % LOOP_ROWS)) : crowd;
   const tail = looping ? run.slice(-LOOP_TAIL) : [];
-  const lead = looping ? run.slice(0, LOOP_LEAD) : [];
+  // Never longer than the run itself, which it now can be: the run used to be
+  // the whole wall and is a few hundred people at most.
+  const lead = looping ? run.slice(0, Math.min(LOOP_LEAD, run.length)) : [];
   const shown = [...tail, ...run, ...lead];
 
   useDrift(surface, shown.length);
@@ -71,7 +94,7 @@ export function HeroBoard({ page, me }: { page: CrowdPage; me: SignupRow | null 
   if (people.length === 0) return null;
 
   return (
-    <div ref={surface} onScroll={onScroll} className="hero-board" aria-hidden>
+    <div ref={surface} className="hero-board" aria-hidden>
       <div className={`hero-board__grid${looping ? " hero-board__grid--looping" : ""}`}>
         {shown.map((person, i) => {
           const isMe = me !== null && person.id === me.id;
